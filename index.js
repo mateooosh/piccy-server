@@ -57,7 +57,7 @@ app.get('/users', (req, res) => {
 
 //create a new user
 app.post('/users', (req, res) => {
-  bcrypt.hash(req.body.password, 10, function(err, hash) {
+  bcrypt.hash(req.body.password, 10, function(err, hash) { 
     if (err) throw err;
     const query = `INSERT INTO users VALUES(NULL, '${req.body.username}', '${req.body.email}', '${hash}', '${req.body.name}');`;
     connection.query(query, function (err, result) {
@@ -65,6 +65,29 @@ app.post('/users', (req, res) => {
       res.json({message:"User was created"});
     })
   });
+})
+
+//get post by id
+app.get('/posts/:id', (req, res) => {
+  let query = `SELECT p.id, u.username, p.description, p.uploadDate, p.photo, u.photo as userPhoto, count(l.idPost) as likes, CASE WHEN ${req.query.idUser} IN (SELECT idUser from likes WHERE likes.idPost=p.id) THEN 1 ELSE 0 END as liked from users u join posts p on u.id=p.idUser left join likes l on p.id=l.idPost group by p.id HAVING p.id=${req.params.id}`;
+  
+
+  connection.query(query, 
+    function (err, rows, fields) {
+      if(err) throw err; 
+      rows.map(item => {
+        let buff = Buffer.from(item.photo);
+        let base64data = buff.toString('base64');  
+        item.photo = 'data:image/jpeg;base64,' + base64data;
+
+        if(item.userPhoto){
+          buff = Buffer.from(item.userPhoto);
+          base64data = buff.toString('base64');  
+          item.userPhoto = 'data:image/jpeg;base64,' + base64data;
+        }
+      })
+      res.json(rows);    
+    })
 })
 
 //get all posts
