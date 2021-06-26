@@ -59,7 +59,7 @@ app.get('/users', (req, res) => {
 app.post('/users', (req, res) => {
   bcrypt.hash(req.body.password, 10, function(err, hash) { 
     if (err) throw err;
-    const query = `INSERT INTO users VALUES(NULL, '${req.body.username}', '${req.body.email}', '${hash}', '${req.body.name}');`;
+    const query = `INSERT INTO users VALUES(NULL, '${req.body.username}', '${req.body.email}', '${hash}', '${req.body.name}', NULL, NULL);`;
     connection.query(query, function (err, result) {
       if(err) throw err;
       res.json({message:"User was created"});
@@ -155,6 +155,28 @@ app.delete('/likes', (req, res) => {
     if(err) throw err;
     res.json({message:"Disliked"});
   })
+})
+
+
+// search user by username
+app.get('/users/:query', (req, res) => {
+  let query = `SELECT id, username, email, name, photo from USERS WHERE username LIKE '%${req.params.query}%' OR name LIKE '%${req.params.query}%'`;
+
+  //dorobic page
+
+
+  connection.query(query, 
+    function (err, rows, fields) {
+      if(err) throw err; 
+      rows.map(item => {
+        if(item.photo){
+          let buff = Buffer.from(item.photo);
+          let base64data = buff.toString('base64');  
+          item.photo = 'data:image/jpeg;base64,' + base64data;
+        }
+      })
+      res.json(rows);      
+    })
 })
 
 //log in
