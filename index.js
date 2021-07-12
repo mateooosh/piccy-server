@@ -13,150 +13,14 @@ app.use(bodyParser.urlencoded({limit: '10mb', extended: true }));
 app.use(cors())
 
 const connection = require('./connection/connection').connection;
-console.log(connection)
 
-
-// test
-app.post('/test', (req, res) => {
-  const query = `INSERT INTO test VALUES(NULL, '${req.body.message}');`;
-  connection.query(query, function (err, result) {
-    if(err) throw err;
-    res.json({message:"Test"}); 
-  })
-  console.log(req.body.message);
-  // res.json({message:"Test"}); 
-})
-
-// test
-app.get('/test', (req, res) => {
-  const query = `SELECT * FROM test`;
-  connection.query(query, function (err, result) {
-    if(err) throw err;
-    res.json(result); 
-  })
-  // console.log(req.body.message);
-  // res.json({message:"Test"}); 
-})
-
-
-
-
-
-//get users
-app.get('/users', (req, res) => {
-  let query = '';
-  if(req.query.idUser){
-    query = `SELECT id, username, email, name, photo, description, (SELECT COUNT(*) FROM posts WHERE idUser=${req.query.idUser}) as postsAmount, (SELECT COUNT(*) FROM followers WHERE idUser=${req.query.idUser}) as following, (SELECT COUNT(*) FROM followers WHERE idFollower=${req.query.idUser}) as followers FROM users WHERE id=${req.query.idUser}`;
-  }
-  else if(req.query.username && req.query.myIdUser){ 
-    query = `SELECT id, username, email, name, photo, description, 
-      (SELECT COUNT(*) FROM posts WHERE idUser=(SELECT id from users WHERE username='${req.query.username}')) as postsAmount, 
-      (SELECT COUNT(*) FROM followers WHERE idUser=(SELECT id from users WHERE username='${req.query.username}')) as following, 
-      (SELECT COUNT(*) FROM followers WHERE idFollower=(SELECT id from users WHERE username='${req.query.username}')) as followers,
-      CASE WHEN 
-        (SELECT id FROM followers WHERE idFollower IN (SELECT id FROM users WHERE username='${req.query.username}') AND idUser=${req.query.myIdUser}) THEN 1 ELSE 0 END as amIFollowing
-      FROM users WHERE id=(SELECT id from users WHERE username='${req.query.username}')`; 
-  }
-  else{
-    query = 'SELECT id, username, email, name, photo, description FROM users';
-  }
-
-  connection.query(query, (err, rows, fields) => {
-    if(err) throw err;
-    rows.map(item => {
-      if(item.photo){
-        let buff = Buffer.from(item.photo);
-        let base64data = buff.toString('base64');  
-        item.photo = 'data:image/jpeg;base64,' + base64data;
-      }
-    })
-    res.json(rows);    
-  })
-})
-
-//create a new user
-app.post('/users', (req, res) => {
-  bcrypt.hash(req.body.password, 10, function(err, hash) { 
-    if (err) throw err;
-    const query = `INSERT INTO users VALUES(NULL, '${req.body.username}', '${req.body.email}', '${hash}', '${req.body.name}', NULL, NULL);`;
-    connection.query(query, function (err, result) {
-      if(err) throw err;
-      res.json({message:"User was created"});
-    })
-  });
-})
-
-//get post by id
-app.get('/posts/:id', (req, res) => {
-  let query = `SELECT p.id, u.username, p.description, p.uploadDate, p.photo, u.photo as userPhoto, count(l.idPost) as likes, CASE WHEN ${req.query.idUser} IN (SELECT idUser from likes WHERE likes.idPost=p.id) THEN 1 ELSE 0 END as liked from users u join posts p on u.id=p.idUser left join likes l on p.id=l.idPost group by p.id HAVING p.id=${req.params.id}`;
   
+//rest routes
+require('./routes/test')(app, connection);
+require('./routes/users')(app, connection);
+require('./routes/posts')(app, connection);
 
-  connection.query(query, 
-    function (err, rows, fields) {
-      if(err) throw err; 
-      rows.map(item => {
-        let buff = Buffer.from(item.photo);
-        let base64data = buff.toString('base64');  
-        item.photo = 'data:image/jpeg;base64,' + base64data;
 
-        if(item.userPhoto){
-          buff = Buffer.from(item.userPhoto);
-          base64data = buff.toString('base64');  
-          item.userPhoto = 'data:image/jpeg;base64,' + base64data;
-        }
-      })
-      res.json(rows);    
-    })
-})
-
-//get all posts
-app.get('/posts', (req, res) => {
-  let query = '';
-  if(req.query.username){
-    if(req.query.onlyUserPosts == 'true'){
-      query = `SELECT p.id, u.username, p.description, p.uploadDate, p.photo, count(l.idPost) as likes, CASE WHEN (SELECT id FROM users WHERE username='${req.query.username}') IN (SELECT idUser from likes WHERE likes.idPost=p.id) THEN 1 ELSE 0 END as liked from users u join posts p on u.id=p.idUser left join likes l on p.id=l.idPost WHERE p.idUser=(SELECT id FROM users WHERE username='${req.query.username}') group by p.id ORDER BY p.uploadDate DESC`;
-    }
-    else {
-      query = `SELECT p.id, u.username, p.description, p.uploadDate, p.photo, u.photo as userPhoto, count(l.idPost) as likes, CASE WHEN ${req.query.idUser} IN (SELECT idUser from likes WHERE likes.idPost=p.id) THEN 1 ELSE 0 END as liked from users u join posts p on u.id=p.idUser left join likes l on p.id=l.idPost group by p.id ORDER BY p.uploadDate DESC`; 
-    }
-  }
-  else{
-    if(req.query.onlyUserPosts == 'true'){
-      query = `SELECT p.id, u.username, p.description, p.uploadDate, p.photo, count(l.idPost) as likes, CASE WHEN ${req.query.idUser} IN (SELECT idUser from likes WHERE likes.idPost=p.id) THEN 1 ELSE 0 END as liked from users u join posts p on u.id=p.idUser left join likes l on p.id=l.idPost WHERE p.idUser=${req.query.idUser} group by p.id ORDER BY p.uploadDate DESC`;
-    }
-    else{
-      query = `SELECT p.id, u.username, p.description, p.uploadDate, p.photo, u.photo as userPhoto, count(l.idPost) as likes, CASE WHEN ${req.query.idUser} IN (SELECT idUser from likes WHERE likes.idPost=p.id) THEN 1 ELSE 0 END as liked from users u join posts p on u.id=p.idUser left join likes l on p.id=l.idPost group by p.id ORDER BY p.uploadDate DESC`;
-    }
-  }
-
-  connection.query(query, 
-    function (err, rows, fields) {
-      if(err) throw err; 
-      rows.map(item => {
-        let buff = Buffer.from(item.photo);
-        let base64data = buff.toString('base64');  
-        item.photo = 'data:image/jpeg;base64,' + base64data;
-
-        if(item.userPhoto){
-          buff = Buffer.from(item.userPhoto);
-          base64data = buff.toString('base64');  
-          item.userPhoto = 'data:image/jpeg;base64,' + base64data;
-        }
-      })
-      res.json(rows);    
-    })
-})
-
-//create a new post
-app.post('/posts', (req, res) => {
-  const bufferValue = Buffer.from(`${req.body.photo}`,"base64");
-  let photoHex = '0x'+bufferValue.toString('hex');
-  const query = `INSERT INTO posts (id, idUser, description, uploadDate, photo) VALUES (NULL, ${req.body.idUser}, '${req.body.description}', current_timestamp(), ${photoHex});`;
-  connection.query(query, function (err, result) {
-    if(err) throw err;
-    res.json({message:"Post was created"});
-  })
-})
 
 //like post
 app.post('/likes', (req, res) => {
@@ -227,26 +91,6 @@ app.post('/auth', (req, res) => {
   })
 });
 
-
-
-
-//follow user
-app.post('/users/:id/follow/:idFollower', (req, res) => {
-  const query = `INSERT INTO followers VALUES(NULL, '${req.params.id}', '${req.params.idFollower}');`;
-  connection.query(query, function (err, result) {
-    if(err) throw err;
-    res.json({message:"Followed"}); 
-  })
-})
-
-//unfollow user
-app.delete('/users/:id/follow/:idFollower', (req, res) => {
-  const query = `DELETE FROM followers WHERE idUser=${req.params.id} AND idFollower=${req.params.idFollower};`;
-  connection.query(query, function (err, result) {
-    if(err) throw err;
-    res.json({message:"Unfollowed"});
-  })
-})
 
 
 const server = app.listen(port, () => {
