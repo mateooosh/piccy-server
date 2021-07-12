@@ -1,6 +1,5 @@
 const express = require('express');
 const bodyParser = require('body-parser');
-const mysql = require('mysql');
 const bcrypt = require('bcrypt');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
@@ -13,14 +12,34 @@ app.use(bodyParser.json({limit: '10mb', extended: true }));
 app.use(bodyParser.urlencoded({limit: '10mb', extended: true }));
 app.use(cors())
 
+const connection = require('./connection/connection').connection;
+console.log(connection)
 
-var connection = mysql.createConnection({
-  host: "localhost",
-  user: "root",
-  password: "",
-  database: "praca_inzynierska"
-});
-connection.connect();
+
+// test
+app.post('/test', (req, res) => {
+  const query = `INSERT INTO test VALUES(NULL, '${req.body.message}');`;
+  connection.query(query, function (err, result) {
+    if(err) throw err;
+    res.json({message:"Test"}); 
+  })
+  console.log(req.body.message);
+  // res.json({message:"Test"}); 
+})
+
+// test
+app.get('/test', (req, res) => {
+  const query = `SELECT * FROM test`;
+  connection.query(query, function (err, result) {
+    if(err) throw err;
+    res.json(result); 
+  })
+  // console.log(req.body.message);
+  // res.json({message:"Test"}); 
+})
+
+
+
 
 
 //get users
