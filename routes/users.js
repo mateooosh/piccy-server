@@ -64,5 +64,26 @@ router.delete('/users/:id/follow/:idFollower', (req, res) => {
   })
 })
 
+// search user by username
+router.get('/users/:query', (req, res) => {
+  let query = `SELECT id, username, email, name, photo from USERS WHERE username LIKE '%${req.params.query}%' OR name LIKE '%${req.params.query}%'`;
+
+  //dorobic page
+
+
+  connection.query(query, 
+    function (err, rows, fields) {
+      if(err) throw err; 
+      rows.map(item => {
+        if(item.photo){
+          let buff = Buffer.from(item.photo);
+          let base64data = buff.toString('base64');  
+          item.photo = 'data:image/jpeg;base64,' + base64data;
+        }
+      })
+      res.json(rows);      
+    })
+})
+
   app.use('/', router);
 }
