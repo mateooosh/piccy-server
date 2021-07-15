@@ -18,7 +18,7 @@ module.exports = (app, connection) => {
         FROM users WHERE id=(SELECT id from users WHERE username='${req.query.username}')`; 
     }
     else{
-      query = 'SELECT id, username, email, name, photo, description FROM users';
+      query = 'SELECT id, username, email, name, photo, description, (SELECT COUNT(*) FROM followers WHERE idFollower=users.id) as followers FROM users ORDER BY followers DESC';
     }
 
     connection.query(query, (err, rows, fields) => {
@@ -66,7 +66,7 @@ router.delete('/users/:id/follow/:idFollower', (req, res) => {
 
 // search user by username
 router.get('/users/:query', (req, res) => {
-  let query = `SELECT id, username, email, name, photo from USERS WHERE username LIKE '%${req.params.query}%' OR name LIKE '%${req.params.query}%'`;
+  let query = `SELECT id, username, email, name, photo, (SELECT COUNT(*) FROM followers WHERE idFollower=u.id) as followers from USERS u WHERE username LIKE '%${req.params.query}%' OR name LIKE '%${req.params.query}%' ORDER BY followers DESC`;
 
   //dorobic page
 

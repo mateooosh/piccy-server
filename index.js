@@ -18,6 +18,7 @@ require('./routes/test')(app, connection);
 require('./routes/users')(app, connection);
 require('./routes/posts')(app, connection);
 require('./routes/auth')(app, connection);
+require('./routes/comments')(app, connection);
 
 
 
