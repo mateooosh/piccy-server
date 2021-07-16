@@ -1,5 +1,8 @@
 module.exports = (app, connection) => {
 
+  //import my functions
+  const fun = require('../functions/functions');
+
   const router = require('express').Router();
 
   //get post by id
@@ -11,9 +14,7 @@ module.exports = (app, connection) => {
         if(err) throw err;
 
         rows.map(item => {
-          let buff = Buffer.from(item.photo);
-          let base64data = buff.toString('base64');  
-          item.photo = 'data:image/jpeg;base64,' + base64data;
+          item.photo = fun.bufferToBase64(item.photo);
         })
 
         res.json(rows);    

@@ -12,6 +12,10 @@ app.use(cors())
 
 const connection = require('./connection/connection').connection;
 
+// //import my functions
+// const fun = require('./functions/functions');
+
+
   
 //rest routes
 require('./routes/test')(app, connection);
@@ -41,7 +45,7 @@ app.delete('/likes', (req, res) => {
 })
 
 const server = app.listen(port, () => {
-  console.log(`Example app listening at http://localhost:${port}`)
+  console.log(`Listening at http://localhost:${port}`)
 });
 
 const io = socket(server);

@@ -1,5 +1,8 @@
 module.exports = (app, connection) => {
 
+  //import my functions
+  const fun = require('../functions/functions');
+
   const router = require('express').Router();
 
   //get users
@@ -25,9 +28,7 @@ module.exports = (app, connection) => {
       if(err) throw err;
       rows.map(item => {
         if(item.photo){
-          let buff = Buffer.from(item.photo);
-          let base64data = buff.toString('base64');  
-          item.photo = 'data:image/jpeg;base64,' + base64data;
+          item.photo = fun.bufferToBase64(item.photo);
         }
       })
       res.json(rows);    
@@ -76,9 +77,7 @@ router.get('/users/:query', (req, res) => {
       if(err) throw err; 
       rows.map(item => {
         if(item.photo){
-          let buff = Buffer.from(item.photo);
-          let base64data = buff.toString('base64');  
-          item.photo = 'data:image/jpeg;base64,' + base64data;
+          item.photo = fun.bufferToBase64(item.photo);
         }
       })
       res.json(rows);      
