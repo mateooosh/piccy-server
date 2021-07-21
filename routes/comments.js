@@ -19,6 +19,22 @@ module.exports = (app, connection) => {
 
         res.json(rows);    
       })
+  });
+
+  //  BODY
+  // - idUser
+  // - content
+  //add comment
+  router.post('/comments/:idPost', (req, res) => {
+    const query = `INSERT INTO comments VALUES (NULL, ${req.params.idPost}, ${req.body.idUser}, NULL, '${req.body.content}')`;
+    
+    connection.query(query,
+      (err, rows, fields) => {
+        if(err) throw err;
+
+        res.json({message: "Comment was created"});
+      }  
+    )
   })
 
   

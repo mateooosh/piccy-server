@@ -13,7 +13,7 @@ app.use(cors())
 const connection = require('./connection/connection').connection;
 
 // //import my functions
-// const fun = require('./functions/functions');
+const fun = require('./functions/functions');
 
 
   
@@ -41,6 +41,23 @@ app.delete('/likes', (req, res) => {
   connection.query(query, function (err, result) {
     if(err) throw err;
     res.json({message:"Disliked"});
+  })
+})
+
+// get all user's followers
+app.get('/followers/:id', (req, res) => {
+  const query = `SELECT f.id, f.idUser, u.username, u.name, u.photo as userPhoto, (SELECT COUNT(*) FROM followers WHERE idFollower=u.id) as followers FROM followers f JOIN users u ON f.idUser=u.id WHERE f.idFollower=${req.params.id} ORDER BY followers DESC`;
+  connection.query(query, async function(err, rows, fields) {
+    if(err) throw err;
+
+    for(item of rows) {
+      if(item.userPhoto){
+        const image = await fun.resizeImage(item.userPhoto, 40, 40);
+        item.userPhoto = fun.bufferToBase64(image);
+      }
+    }
+
+    res.json(rows);
   })
 })
 
