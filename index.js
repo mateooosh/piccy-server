@@ -61,6 +61,23 @@ app.get('/followers/:id', (req, res) => {
   })
 })
 
+// get all user's following
+app.get('/following/:id', (req, res) => {
+  const query = `SELECT f.id, f.idUser, u.username, u.name, u.photo as userPhoto, (SELECT COUNT(*) FROM followers WHERE idFollower=u.id) as followers FROM followers f JOIN users u ON f.idFollower=u.id WHERE f.idUser=${req.params.id} ORDER BY followers DESC`;
+  connection.query(query, async function(err, rows, fields) {
+    if(err) throw err;
+
+    for(item of rows) {
+      if(item.userPhoto){
+        const image = await fun.resizeImage(item.userPhoto, 40, 40);
+        item.userPhoto = fun.bufferToBase64(image);
+      }
+    }
+
+    res.json(rows);
+  })
+})
+
 const server = app.listen(port, () => {
   console.log(`Listening at http://localhost:${port}`)
 });
