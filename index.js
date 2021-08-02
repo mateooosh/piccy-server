@@ -25,6 +25,15 @@ require('./routes/auth')(app, connection);
 require('./routes/comments')(app, connection);
 
 
+// report post
+app.post('/reports', (req, res) => {
+  const query = `INSERT INTO reports VALUES(NULL, ${req.body.idPost}, ${req.body.idReporter}, NULL, '${req.body.reason}', 'active')`;
+  connection.query(query, function(err, result) {
+    if(err) throw  err;
+    res.json({message: 'Post has been reported!'})
+  })
+})
+
 
 //like post
 app.post('/likes', (req, res) => {
