@@ -5,7 +5,7 @@ const bufferToBase64 = photo => {
 }
 
 const base64ToHex = photo => {
-  return `0x${Buffer.from(item, 'base64').toString('hex')}`;
+  return `0x${Buffer.from(photo, 'base64').toString('hex')}`;
 }
 
  const resizeImage = (image, width, height) => {

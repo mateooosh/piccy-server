@@ -40,7 +40,7 @@ io.on("connection", function (socket) {
     connection.query(query, async function (err, rows, fields) {
       if (err) throw err;
 
-      for (item of rows) {
+      for (let item of rows) {
         if (item.userPhoto) {
           const image = await fun.resizeImage(item.userPhoto, 40, 40);
           item.userPhoto = fun.bufferToBase64(image);
@@ -57,7 +57,7 @@ io.on("connection", function (socket) {
     connection.query(query, async function (err, rows, fields) {
       if (err) throw err;
 
-      for (item of rows) {
+      for (let item of rows) {
         if (item.userPhoto) {
           const image = await fun.resizeImage(item.userPhoto, 40, 40);
           item.userPhoto = fun.bufferToBase64(image);
@@ -68,10 +68,40 @@ io.on("connection", function (socket) {
     })
   })
 
-  app.post('/message', (req, res) => {
-    socket.emit('message', req.body.message);
-    res.json(req.body.message);
+  //get channels by idUser
+  app.get('/channels', (req, res) => {
+    console.log(req.query);
+    if (req.query.idUser) {
+      const query = `SELECT idUser, idChannel, username, name, photo, (SELECT message from messages m WHERE m.idChannel=uc.idChannel ORDER BY createdAt DESC LIMIT 1) as lastMessage, 
+                    (SELECT createdAt from messages m WHERE m.idChannel=uc.idChannel ORDER BY createdAt DESC LIMIT 1) as createdAt FROM users JOIN users_channels uc ON users.id=uc.idUser 
+                    WHERE uc.idChannel IN (SELECT idChannel FROM users_channels WHERE idUser=${req.query.idUser}) AND uc.idUser!=${req.query.idUser}`;
+      connection.query(query, async (err, rows) => {
+        if (err) throw err;
+        for (let item of rows) {
+          if (item.photo) {
+            const image = await fun.resizeImage(item.photo, 60, 60);
+            item.photo = fun.bufferToBase64(image);
+          }
+        }
+
+        res.json(rows);
+      })
+    } else {
+      res.json({message: 'You need to add query to your request url'});
+    }
   })
+
+  socket.on('message-from-user', (message) => {
+    console.log('message from user', message);
+
+    message.idUser = "2";
+
+    socket.broadcast.emit('message-from-server', message);
+  })
+
+  // setInterval(() => {
+  //     socket.emit('message-from-server', {idUser: 12, message: 'message from serv', date: new Date()});
+  // }, 2000)
 
   socket.on("new-user", function (data) {
     socket.userId = data;
@@ -80,9 +110,4 @@ io.on("connection", function (socket) {
     console.log(activeUsers)
   });
 
-  let counter = 0;
-
-  setInterval(() => {
-    socket.emit('test', counter++);
-  }, 1000)
 });

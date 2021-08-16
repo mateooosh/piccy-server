@@ -1,3 +1,4 @@
+const fun = require("../functions/functions");
 
 module.exports = (app, connection) => {
 
@@ -38,8 +39,7 @@ module.exports = (app, connection) => {
   router.get('/users/:id/get', (req, res) => {
     let query = `SELECT id, username, email, name, photo, description FROM users WHERE id=${req.params.id}`;
 
-
-    connection.query(query, (err, rows, fields) => {
+    connection.query(query, (err, rows) => {
       if (err) throw err;
       if (rows[0].photo) {
         rows[0].photo = fun.bufferToBase64(rows[0].photo);
@@ -99,17 +99,19 @@ module.exports = (app, connection) => {
 
   // update user's info
   router.put('/users/:id', (req, res) => {
+    const photoHex = fun.base64ToHex(req.body.photo);
+    console.log(photoHex)
     const query = `
     UPDATE users 
-    SET username='${req.body.username}', email='${req.body.email}', name='${req.body.name}', description='${req.body.description}' 
+    SET username='${req.body.username}', email='${req.body.email}', name='${req.body.name}', description='${req.body.description}', photo=${photoHex} 
     WHERE id=${req.params.id}`;
+    console.log(query);
 
     connection.query(query, function (err, result) {
       if (err) throw err;
       res.json({message: 'Saved changes'});
     })
   })
-
 
   app.use('/', router);
 }
