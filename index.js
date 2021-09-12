@@ -14,6 +14,7 @@ const connection = require('./connection/connection').connection;
 
 // //import my functions
 const fun = require('./functions/functions');
+const bcrypt = require("bcrypt");
 
 
 const server = app.listen(port, () => {
@@ -125,6 +126,51 @@ io.on("connection", function (socket) {
     })
   })
 
+  //  BODY
+  // - idUser
+  // - oldPassword
+  // - newPassword
+  // reset password
+  app.put('/reset/password', (req, res) => {
+    console.log(req.body);
+    bcrypt.hash(req.body.newPassword, 10, function (err, hash) {
+      console.log(hash)
+    })
+
+
+    connection.query(`SELECT password FROM users WHERE id=39`,
+      (err, rows, fields) => {
+        if (err) throw err;
+        let correctOldPassword = bcrypt.compareSync(req.body.oldPassword, rows[0].password);
+
+        if (correctOldPassword) {
+          bcrypt.hash(req.body.newPassword, 10, function (err, hash) {
+            if (err) throw err;
+            const query = `UPDATE users SET password='${hash}' WHERE id=${req.body.idUser}`;
+            connection.query(query, function (err, result) {
+              if (err) throw err;
+              res.json({message: "Password has been changed"});
+            })
+          });
+        } else {
+          res.json({message: "Wrong old password"});
+        }
+      }
+    )
+  })
+
+  //  BODY
+  // - idReporter
+  // - description
+  // report bug
+  app.post('/report/bug', (req, res) => {
+    const query = `INSERT INTO bugs VALUES(NULL, '${req.body.idReporter}', NULL, '${req.body.description}', 'opened')`;
+    connection.query(query, function (err, result) {
+      if (err) throw err;
+      res.json({message: "Thank You! Bug has been reported"});
+    })
+  })
+
   socket.on('message-from-user', (message) => {
     console.log('message from user', message);
 
@@ -133,11 +179,10 @@ io.on("connection", function (socket) {
       if (err) throw err;
       console.log('saved')
       // socket.broadcast.emit('message-from-server', message);
-      message.idSender = 41;
-      socket.emit('message-from-server', message);
+      // message.idSender = 41;
+      socket.broadcast.emit('message-from-server', message);
     })
   })
-
   // setInterval(() => {
   //     socket.emit('message-from-server', {idUser: 12, message: 'message from serv', date: new Date()});
   // }, 2000)

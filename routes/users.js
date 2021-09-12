@@ -1,4 +1,5 @@
 const fun = require("../functions/functions");
+const bcrypt = require("bcrypt");
 
 module.exports = (app, connection) => {
 
@@ -80,7 +81,10 @@ module.exports = (app, connection) => {
 
   // search user by username
   router.get('/users/:query', (req, res) => {
-    let query = `SELECT id, username, email, name, photo, (SELECT COUNT(*) FROM followers WHERE idFollower=u.id) as followers from USERS u WHERE username LIKE '%${req.params.query}%' OR name LIKE '%${req.params.query}%' ORDER BY followers DESC`;
+    let query = `SELECT id, username, email, name, photo, (SELECT COUNT(*) FROM followers 
+        WHERE idFollower=u.id) as followers from USERS u 
+        WHERE username LIKE '%${req.params.query}%' OR name LIKE '%${req.params.query}%' 
+        ORDER BY followers DESC`;
 
     //dorobic page
 

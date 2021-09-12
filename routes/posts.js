@@ -53,7 +53,7 @@ module.exports = (app, connection) => {
     connection.query(query,
       async function (err, rows, fields) {
         if (err) throw err;
-        for (item of rows) {
+        for (let item of rows) {
           if (item.photo) {
             item.photo = fun.bufferToBase64(item.photo);
           }
@@ -63,6 +63,7 @@ module.exports = (app, connection) => {
             item.userPhoto = fun.bufferToBase64(image);
           }
         }
+        console.log(rows)
         res.json(rows);
       })
   })

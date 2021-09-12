@@ -7,7 +7,7 @@ module.exports = (app, connection) => {
 
   //get post by id
   router.get('/comments/:idPost', (req, res) => {
-    let query = `SELECT c.*, u.username, u.photo FROM comments c JOIN users u ON c.idUser=u.id WHERE c.idPost=${req.params.idPost}`;
+    let query = `SELECT c.*, u.username, u.photo FROM comments c JOIN users u ON c.idUser=u.id WHERE c.idPost=${req.params.idPost} ORDER BY id DESC`;
      
     connection.query(query, 
       function (err, rows, fields) {
