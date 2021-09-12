@@ -24,16 +24,15 @@ const server = app.listen(port, () => {
 const io = websocket(server);
 const activeUsers = new Set();
 
+//rest routes
+require('./routes/auth')(app, connection);
+require('./routes/test')(app, connection);
+require('./routes/users')(app, connection);
+require('./routes/posts')(app, connection);
+require('./routes/comments')(app, connection);
+
 io.on("connection", function (socket) {
   console.log("Made socket connection");
-
-  //rest routes
-  require('./routes/test')(app, connection);
-  require('./routes/users')(app, connection);
-  require('./routes/posts')(app, connection);
-  require('./routes/auth')(app, connection);
-  require('./routes/comments')(app, connection);
-
 
   // get all user's followers
   app.get('/followers/:id', (req, res) => {
@@ -132,11 +131,6 @@ io.on("connection", function (socket) {
   // - newPassword
   // reset password
   app.put('/reset/password', (req, res) => {
-    console.log(req.body);
-    bcrypt.hash(req.body.newPassword, 10, function (err, hash) {
-      console.log(hash)
-    })
-
 
     connection.query(`SELECT password FROM users WHERE id=39`,
       (err, rows, fields) => {
