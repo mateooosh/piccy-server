@@ -1,3 +1,4 @@
+const auth = require("../middleware/token");
 module.exports = (app, connection) => {
 
   //import my functions
@@ -36,7 +37,7 @@ module.exports = (app, connection) => {
   })
 
   //get all posts
-  router.get('/posts', (req, res) => {
+  router.get('/posts', auth, (req, res) => {
     let query = '';
     const offset = req.query.page * 5 - 5;
     if (req.query.username) {
@@ -72,17 +73,42 @@ module.exports = (app, connection) => {
   })
 
   //create a new post
-  router.post('/posts', (req, res) => {
-    const photoHex = fun.base64ToHex(req.body.photo);
-    const query = `INSERT INTO posts (id, idUser, description, uploadDate, photo) VALUES (NULL, ${req.body.idUser}, '${req.body.description}', current_timestamp(), ${photoHex});`;
+  router.post('/posts', auth, (req, res) => {
+    const {photo, idUser, desciption} = req.body;
+    const photoHex = fun.base64ToHex(photo);
+
+    const query = `INSERT INTO posts (id, idUser, description, uploadDate, photo) VALUES (NULL, ${idUser}, '${description}', current_timestamp(), ${photoHex});`;
     connection.query(query, function (err, result) {
       if (err) throw err;
       res.json({message: "Post was created"});
     })
   })
 
+  //delete post by id
+  router.delete('/posts/:id', auth, (req, res) => {
+    // res.json({message: req.params.id});
+    const idPost = req.params.id;
+
+
+    let query = `DELETE FROM posts WHERE id=${idPost};`;
+    connection.query(query, (err, result) => {
+      if (err) throw err;
+
+      query = `DELETE FROM reports WHERE idPost=${idPost};`;
+      connection.query(query, (err, result) => {
+        if (err) throw err;
+
+        query = `DELETE FROM comments WHERE idPost=${idPost}`;
+        connection.query(query, (err, result) => {
+          if (err) throw err;
+          res.json({message: "Post has been removed"});
+        })
+      })
+    })
+  })
+
   // get post photo by id
-  router.get('/posts/:id/photo', (req, res) => {
+  router.get('/posts/:id/photo', auth, (req, res) => {
     const query = `SELECT photo FROM posts WHERE id=${req.params.id}`
     connection.query(query, function (err, rows, fields) {
       if (err) throw err;
@@ -92,8 +118,10 @@ module.exports = (app, connection) => {
   })
 
   // report post
-  router.post('/reports', (req, res) => {
-    const query = `INSERT INTO reports VALUES(NULL, ${req.body.idPost}, ${req.body.idReporter}, NULL, '${req.body.reason}', 'active')`;
+  router.post('/reports', auth, (req, res) => {
+    const {idPost, idReporter, reason} = req.body;
+
+    const query = `INSERT INTO reports VALUES(NULL, ${idPost}, ${idReporter}, NULL, '${reason}', 'active')`;
     connection.query(query, function (err, result) {
       if (err) throw  err;
       res.json({message: 'Post has been reported!'})
@@ -101,8 +129,10 @@ module.exports = (app, connection) => {
   })
 
   //like post
-  router.post('/likes', (req, res) => {
-    const query = `INSERT INTO likes VALUES(NULL, '${req.body.idUser}', '${req.body.idPost}');`;
+  router.post('/likes', auth, (req, res) => {
+    const {idUser, idPost} = req.body;
+
+    const query = `INSERT INTO likes VALUES(NULL, '${idUser}', '${idPost}');`;
     connection.query(query, function (err, result) {
       if (err) throw err;
       res.json({message: "Liked"});
@@ -110,11 +140,13 @@ module.exports = (app, connection) => {
   })
 
   //dislike post
-  router.delete('/likes', (req, res) => {
-    const query = `DELETE FROM likes WHERE idUser=${req.body.idUser} AND idPost=${req.body.idPost};`;
+  router.delete('/likes', auth, (req, res) => {
+    const {idUser, idPost} = req.body;
+
+    const query = `DELETE FROM likes WHERE idUser=${idUser} AND idPost=${idPost};`;
     connection.query(query, function (err, result) {
       if (err) throw err;
-      res.json({message: "Disliked"});
+      res.json({message: "Post has been disliked"});
     })
   })
 

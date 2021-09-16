@@ -3,7 +3,10 @@ module.exports = (app, connection) => {
   //import my functions
   const fun = require('../functions/functions');
 
+  const auth = require("../middleware/token");
+
   const router = require('express').Router();
+  
 
   //get post by id
   router.get('/comments/:idPost', (req, res) => {

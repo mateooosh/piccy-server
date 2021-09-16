@@ -1,15 +1,16 @@
-const fun = require("../functions/functions");
-const bcrypt = require("bcrypt");
-
 module.exports = (app, connection) => {
 
   //import my functions
   const fun = require('../functions/functions');
 
+  const auth = require("../middleware/token");
+
   const router = require('express').Router();
 
+  const bcrypt = require("bcrypt");
+
   //get users
-  router.get('/users', (req, res) => {
+  router.get('/users', auth, (req, res) => {
     let query = '';
     if (req.query.idUser) {
       query = `SELECT id, username, email, name, photo, description, (SELECT COUNT(*) FROM posts WHERE idUser=${req.query.idUser}) as postsAmount, (SELECT COUNT(*) FROM followers WHERE idUser=${req.query.idUser}) as following, (SELECT COUNT(*) FROM followers WHERE idFollower=${req.query.idUser}) as followers FROM users WHERE id=${req.query.idUser}`;
@@ -37,7 +38,7 @@ module.exports = (app, connection) => {
   })
 
   //get user by id
-  router.get('/users/:id/get', (req, res) => {
+  router.get('/users/:id/get', auth, (req, res) => {
     let query = `SELECT id, username, email, name, photo, description FROM users WHERE id=${req.params.id}`;
 
     connection.query(query, (err, rows) => {
@@ -62,7 +63,7 @@ module.exports = (app, connection) => {
   })
 
   //follow user
-  router.post('/users/:id/follow/:idFollower', (req, res) => {
+  router.post('/users/:id/follow/:idFollower', auth, (req, res) => {
     const query = `INSERT INTO followers VALUES(NULL, '${req.params.id}', '${req.params.idFollower}');`;
     connection.query(query, function (err, result) {
       if (err) throw err;
@@ -71,7 +72,7 @@ module.exports = (app, connection) => {
   })
 
   //unfollow user
-  router.delete('/users/:id/follow/:idFollower', (req, res) => {
+  router.delete('/users/:id/follow/:idFollower', auth, (req, res) => {
     const query = `DELETE FROM followers WHERE idUser=${req.params.id} AND idFollower=${req.params.idFollower};`;
     connection.query(query, function (err, result) {
       if (err) throw err;
@@ -80,7 +81,7 @@ module.exports = (app, connection) => {
   })
 
   // search user by username
-  router.get('/users/:query', (req, res) => {
+  router.get('/users/:query', auth, (req, res) => {
     let query = `SELECT id, username, email, name, photo, (SELECT COUNT(*) FROM followers 
         WHERE idFollower=u.id) as followers from USERS u 
         WHERE username LIKE '%${req.params.query}%' OR name LIKE '%${req.params.query}%' 
@@ -102,7 +103,7 @@ module.exports = (app, connection) => {
   })
 
   // update user's info
-  router.put('/users/:id', (req, res) => {
+  router.put('/users/:id', auth, (req, res) => {
     const photoHex = fun.base64ToHex(req.body.photo);
     console.log(photoHex)
     const query = `
