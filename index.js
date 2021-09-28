@@ -93,34 +93,38 @@ io.on("connection", function (socket) {
   })
 
   //get messages by channel
-  app.get('/messages/:channel', (req, res) => {
-    // console.log(req.query);
-    const messagesQuery = `SELECT id, idSender, message, createdAt FROM messages WHERE idChannel=${req.params.channel}`;
+  app.get('/messages/:idUser', (req, res) => {
+    let idChannel = null;
+    const idChannelQuery = `SELECT idChannel FROM users_channels WHERE idChannel IN (SELECT idChannel FROM users_channels WHERE idUser=${req.params.idUser}) AND idChannel IN (SELECT idChannel FROM users_channels WHERE idUser=${req.query.myIdUser})`
+    connection.query(idChannelQuery, (err, rows) => {
+      idChannel = rows[0].idChannel;
+      const messagesQuery = `SELECT id, idSender, message, createdAt FROM messages WHERE idChannel=${idChannel}`;
 
-    const result = {};
-    let promise = new Promise((resolve, reject) => {
-      connection.query(messagesQuery, (err, rows) => {
-        if (err) throw err;
-        result.messages = rows;
-        resolve();
+      const result = {};
+      let promise = new Promise((resolve, reject) => {
+        connection.query(messagesQuery, (err, rows) => {
+          if (err) throw err;
+          result.messages = rows;
+          resolve();
+        })
       })
-    })
 
-    promise.then(() => {
-      const usersQuery = `SELECT id as idUser, username, photo, name FROM USERS WHERE id IN (SELECT idUser FROM users_channels WHERE idChannel=${req.params.channel})`;
-      connection.query(usersQuery, async (err, rows) => {
-        if (err) throw err;
+      promise.then(() => {
+        const usersQuery = `SELECT id as idUser, username, photo, name FROM USERS WHERE id IN (SELECT idUser FROM users_channels WHERE idChannel=${idChannel})`;
+        connection.query(usersQuery, async (err, rows) => {
+          if (err) throw err;
 
-        for (let item of rows) {
-          if (item.photo) {
-            const image = await fun.resizeImage(item.photo, 60, 60);
-            item.photo = fun.bufferToBase64(image);
+          for (let item of rows) {
+            if (item.photo) {
+              const image = await fun.resizeImage(item.photo, 60, 60);
+              item.photo = fun.bufferToBase64(image);
+            }
+            item.isActive = activeUsers.has(item.username);
           }
-          item.isActive = activeUsers.has(item.username);
-        }
 
-        result.users = rows;
-        res.json(result)
+          result.users = rows;
+          res.json({...result, idChannel})
+        })
       })
     })
   })
@@ -166,20 +170,12 @@ io.on("connection", function (socket) {
   })
 
   socket.on('message-from-user', (message) => {
-    console.log('message from user', message);
-
-    const query = `INSERT INTO messages VALUES(NULL, ${message.idSender}, ${message.idChannel}, '${message.message}', current_timestamp())`;
+    const query = `INSERT INTO messages VALUES(NULL, ${message.idSender}, ${message.idReciever}, ${message.idChannel}, '${message.message}', current_timestamp())`;
     connection.query(query, function (err, result) {
       if (err) throw err;
-      console.log('saved')
-      // socket.broadcast.emit('message-from-server', message);
-      // message.idSender = 41;
-      socket.broadcast.emit('message-from-server', message);
+      io.emit(`message-to-user-${message.idReciever}`, message);
     })
   })
-  // setInterval(() => {
-  //     socket.emit('message-from-server', {idUser: 12, message: 'message from serv', date: new Date()});
-  // }, 2000)
 
   socket.on("new-user", function (data) {
     socket.username = data;

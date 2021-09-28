@@ -1,3 +1,4 @@
+const bcrypt = require("bcrypt");
 module.exports = (app, connection) => {
 
   //import my functions
@@ -8,6 +9,20 @@ module.exports = (app, connection) => {
   const router = require('express').Router();
 
   const bcrypt = require("bcrypt");
+
+
+  function canCreateAccount(username, email) {
+    return new Promise((resolve, reject) => {
+      const query = `SELECT * FROM users WHERE username='${username}' OR email='${email}'`;
+      connection.query(query, (err, rows, fields) => {
+        if (err) reject(err);
+        if (rows.length === 0)
+          resolve();
+        else
+          reject();
+      })
+    })
+  }
 
   //get users
   router.get('/users', auth, (req, res) => {
@@ -51,15 +66,26 @@ module.exports = (app, connection) => {
   })
 
   //create a new user
+  // BODY
+  // - username
+  // - password
+  // - email
+  // - name
   router.post('/users', (req, res) => {
-    bcrypt.hash(req.body.password, 10, function (err, hash) {
-      if (err) throw err;
-      const query = `INSERT INTO users VALUES(NULL, '${req.body.username}', '${req.body.email}', '${hash}', '${req.body.name}', NULL, NULL);`;
-      connection.query(query, function (err, result) {
-        if (err) throw err;
-        res.json({message: "User was created"});
+    const {username, password, email, name} = req.body;
+
+    canCreateAccount(username, email)
+      .then(() => {
+        bcrypt.hash(password, 10, function (err, hash) {
+          if (err) throw err;
+          const query = `INSERT INTO users VALUES(NULL, '${username}', '${email}', '${hash}', '${name}', NULL, NULL);`;
+          connection.query(query, function (err, result) {
+            if (err) throw err;
+            res.json({message: 'Account has been created! Now You can log in', created: true});
+          })
+        })
       })
-    });
+      .catch(() => res.json({message: 'Cannot create user account! Given username or email already exists in our database. Try again.', created: false}))
   })
 
   //follow user
@@ -114,7 +140,56 @@ module.exports = (app, connection) => {
 
     connection.query(query, function (err, result) {
       if (err) throw err;
-      res.json({message: 'Saved changes'});
+      res.json({message: 'Changed have been saved!'});
+    })
+  })
+
+  // remove user's account
+  router.delete('/users/:id', (req, res) => {
+    const id = req.params.id;
+    //delete from users
+    let query = `DELETE FROM users WHERE id=${id}`;
+    connection.query(query, (err, result) => {
+      if (err) throw err;
+      //delete from comments
+      query = `DELETE FROM comments WHERE idUser=${id}`;
+      connection.query(query, (err, result) => {
+        if (err) throw err;
+        // delete from followers
+        query = `DELETE FROM followers WHERE idUser=${id} OR idFollower=${id}`;
+        connection.query(query, (err, result) => {
+          if (err) throw err;
+          // delete from likes
+          query = `DELETE FROM likes WHERE idUser=${id}`;
+          connection.query(query, (err, result) => {
+            if (err) throw err;
+            // delete from posts
+            query = `DELETE FROM posts WHERE idUser=${id}`;
+            connection.query(query, (err, result) => {
+              if (err) throw err;
+
+              //delete from channels
+              query = `DELETE FROM channels WHERE id IN (SELECT idChannel FROM users_channels WHERE idUser=${id})`;
+              connection.query(query, (err, result) => {
+                if (err) throw err;
+
+                // delete from messages
+                query = `DELETE FROM messages WHERE idChannel IN (SELECT idChannel FROM users_channels WHERE idUser=${id})`;
+                connection.query(query, (err, result) => {
+                  if (err) throw err;
+
+                  // delete from users_channels
+                  query = `DELETE FROM users_channels WHERE idUser=${id}`;
+                  connection.query(query, (err, result) => {
+                    if (err) throw err;
+                    res.json({message: 'Account has been deleted! You will be logged off'})
+                  })
+                })
+              })
+            })
+          })
+        })
+      })
     })
   })
 
