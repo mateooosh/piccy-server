@@ -1,10 +1,10 @@
-const auth = require("../middleware/token");
+const auth = require('../middleware/token');
 module.exports = (app, connection) => {
 
   //import my functions
   const fun = require('../functions/functions');
 
-  const auth = require("../middleware/token");
+  const auth = require('../middleware/token');
 
   const router = require('express').Router();
 
@@ -74,13 +74,13 @@ module.exports = (app, connection) => {
 
   //create a new post
   router.post('/posts', auth, (req, res) => {
-    const {photo, idUser, desciption} = req.body;
+    const {photo, idUser, description} = req.body;
     const photoHex = fun.base64ToHex(photo);
 
     const query = `INSERT INTO posts (id, idUser, description, uploadDate, photo) VALUES (NULL, ${idUser}, '${description}', current_timestamp(), ${photoHex});`;
     connection.query(query, function (err, result) {
       if (err) throw err;
-      res.json({message: "Post was created"});
+      res.json({message: 'Post was created'});
     })
   })
 
@@ -101,7 +101,7 @@ module.exports = (app, connection) => {
         query = `DELETE FROM comments WHERE idPost=${idPost}`;
         connection.query(query, (err, result) => {
           if (err) throw err;
-          res.json({message: "Post has been removed"});
+          res.json({message: 'Post has been removed'});
         })
       })
     })
@@ -135,7 +135,7 @@ module.exports = (app, connection) => {
     const query = `INSERT INTO likes VALUES(NULL, '${idUser}', '${idPost}');`;
     connection.query(query, function (err, result) {
       if (err) throw err;
-      res.json({message: "Liked"});
+      res.json({message: 'Liked'});
     })
   })
 
@@ -146,7 +146,7 @@ module.exports = (app, connection) => {
     const query = `DELETE FROM likes WHERE idUser=${idUser} AND idPost=${idPost};`;
     connection.query(query, function (err, result) {
       if (err) throw err;
-      res.json({message: "Post has been disliked"});
+      res.json({message: 'Post has been disliked'});
     })
   })
 

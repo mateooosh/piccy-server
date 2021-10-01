@@ -1,14 +1,14 @@
-const bcrypt = require("bcrypt");
+const bcrypt = require('bcrypt');
 module.exports = (app, connection) => {
 
   //import my functions
   const fun = require('../functions/functions');
 
-  const auth = require("../middleware/token");
+  const auth = require('../middleware/token');
 
   const router = require('express').Router();
 
-  const bcrypt = require("bcrypt");
+  const bcrypt = require('bcrypt');
 
 
   function canCreateAccount(username, email) {
@@ -93,7 +93,7 @@ module.exports = (app, connection) => {
     const query = `INSERT INTO followers VALUES(NULL, '${req.params.id}', '${req.params.idFollower}');`;
     connection.query(query, function (err, result) {
       if (err) throw err;
-      res.json({message: "Followed"});
+      res.json({message: 'Followed'});
     })
   })
 
@@ -102,7 +102,7 @@ module.exports = (app, connection) => {
     const query = `DELETE FROM followers WHERE idUser=${req.params.id} AND idFollower=${req.params.idFollower};`;
     connection.query(query, function (err, result) {
       if (err) throw err;
-      res.json({message: "Unfollowed"});
+      res.json({message: 'Unfollowed'});
     })
   })
 
@@ -131,12 +131,12 @@ module.exports = (app, connection) => {
   // update user's info
   router.put('/users/:id', auth, (req, res) => {
     const photoHex = fun.base64ToHex(req.body.photo);
-    console.log(photoHex)
+
     const query = `
     UPDATE users 
-    SET username='${req.body.username}', email='${req.body.email}', name='${req.body.name}', description='${req.body.description}', photo=${photoHex} 
-    WHERE id=${req.params.id}`;
-    console.log(query);
+    SET username='${req.body.username}', email='${req.body.email}', name='${req.body.name}', description='${req.body.description}', photo=${photoHex} WHERE id=${req.params.id}`;
+
+    console.log(query.slice(query.length-200, query.length ))
 
     connection.query(query, function (err, result) {
       if (err) throw err;
