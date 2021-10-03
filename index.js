@@ -184,6 +184,24 @@ io.on("connection", function (socket) {
     )
   })
 
+  // get tags by query
+  app.get('/tags', (req, res) => {
+    if(req.query.query) {
+      const query = `SELECT tag FROM tags WHERE tag LIKE '%${req.query.query}%'`;
+      connection.query(query, function (err, rows) {
+        if (err) throw err;
+        res.json(rows.map(item => item.tag));
+      })
+    } else {
+      const query = `SELECT * FROM tags`;
+      connection.query(query, function (err, rows) {
+        if (err) throw err;
+        res.json(rows.map(item => item.tag));
+      })
+    }
+
+  })
+
   //  BODY
   // - idReporter
   // - description

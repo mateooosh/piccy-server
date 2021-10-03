@@ -77,10 +77,25 @@ module.exports = (app, connection) => {
     const {photo, idUser, description} = req.body;
     const photoHex = fun.base64ToHex(photo);
 
-    const query = `INSERT INTO posts (id, idUser, description, uploadDate, photo) VALUES (NULL, ${idUser}, '${description}', current_timestamp(), ${photoHex});`;
-    connection.query(query, function (err, result) {
-      if (err) throw err;
-      res.json({message: 'Post was created'});
+    //get tags
+    let tags = description.split(' ').filter(item => item.startsWith('#'))
+    console.log(tags)
+
+    tags = tags.map(tag => `(NULL, '${tag}')`);
+
+    const values = tags.join(',');
+
+    const query = `INSERT IGNORE INTO tags VALUES ${values}`;
+
+    connection.query(query, (err, result) => {
+      if(err) throw err;
+
+      const query = `INSERT INTO posts (id, idUser, description, uploadDate, photo) VALUES (NULL, ${idUser}, '${description}', current_timestamp(), ${photoHex});`;
+      connection.query(query, function (err, result) {
+        if (err) throw err;
+
+        res.json({message: 'Post was created'});
+      })
     })
   })
 
