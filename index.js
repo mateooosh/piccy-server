@@ -99,24 +99,24 @@ io.on("connection", function (socket) {
     new Promise((resolve, reject) => {
       const idChannelQuery = `SELECT idChannel FROM users_channels WHERE idChannel IN (SELECT idChannel FROM users_channels WHERE idUser=${req.params.idUser}) AND idChannel IN (SELECT idChannel FROM users_channels WHERE idUser=${req.query.myIdUser})`
       connection.query(idChannelQuery, (err, rows) => {
-        if(err) throw(err);
+        if (err) throw(err);
 
-        if(rows.length > 0)
+        if (rows.length > 0)
           idChannel = rows[0].idChannel;
         resolve();
       })
     })
       .then(() => {
-        if(!idChannel) {
+        if (!idChannel) {
           connection.query(`SELECT MAX(idChannel) as max FROM users_channels`, (err, rows) => {
-            if(err) throw err;
+            if (err) throw err;
             idChannel = rows[0].max + 1;
 
             connection.query(`INSERT INTO users_channels(idUser, idChannel) VALUES(${req.params.idUser}, ${idChannel}), (${req.query.myIdUser}, ${idChannel});`)
 
             const queryCreateChannel = `INSERT INTO channels VALUES(${idChannel})`
             connection.query(queryCreateChannel, (err, rows) => {
-              if(err) throw err;
+              if (err) throw err;
               getMessages(idChannel);
             })
           })
@@ -136,23 +136,23 @@ io.on("connection", function (socket) {
           resolve();
         })
       })
-      .then(() => {
-        const usersQuery = `SELECT id as idUser, username, photo, name FROM USERS WHERE id IN (SELECT idUser FROM users_channels WHERE idChannel=${idChannel})`;
-        connection.query(usersQuery, async (err, rows) => {
-          if (err) throw err;
+        .then(() => {
+          const usersQuery = `SELECT id as idUser, username, photo, name FROM USERS WHERE id IN (SELECT idUser FROM users_channels WHERE idChannel=${idChannel})`;
+          connection.query(usersQuery, async (err, rows) => {
+            if (err) throw err;
 
-          for (let item of rows) {
-            if (item.photo) {
-              const image = await fun.resizeImage(item.photo, 60, 60);
-              item.photo = fun.bufferToBase64(image);
+            for (let item of rows) {
+              if (item.photo) {
+                const image = await fun.resizeImage(item.photo, 60, 60);
+                item.photo = fun.bufferToBase64(image);
+              }
+              // item.isActive = activeUsers.has(item.username);
             }
-            // item.isActive = activeUsers.has(item.username);
-          }
 
-          result.users = rows;
-          res.json({...result, idChannel})
+            result.users = rows;
+            res.json({...result, idChannel})
+          })
         })
-      })
     }
   })
 
@@ -186,7 +186,7 @@ io.on("connection", function (socket) {
 
   // get tags by query
   app.get('/tags', (req, res) => {
-    if(req.query.query) {
+    if (req.query.query) {
       const query = `SELECT tag FROM tags WHERE tag LIKE '%${req.query.query}%'`;
       connection.query(query, function (err, rows) {
         if (err) throw err;
@@ -199,7 +199,21 @@ io.on("connection", function (socket) {
         res.json(rows.map(item => item.tag));
       })
     }
+  })
 
+  // get posts by tags
+  app.get('/tag/posts', (req, res) => {
+    const tag = req.query.tag
+    const query = `SELECT photo, description FROM posts WHERE description LIKE '%${tag}%'`
+    connection.query(query, (err, rows) => {
+      if(err) throw err;
+      for (let item of rows) {
+        if (item.photo) {
+          item.photo = fun.bufferToBase64(item.photo);
+        }
+      }
+      res.json(rows);
+    })
   })
 
   //  BODY

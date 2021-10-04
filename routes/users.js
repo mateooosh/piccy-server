@@ -134,9 +134,7 @@ module.exports = (app, connection) => {
 
     const query = `
     UPDATE users 
-    SET username='${req.body.username}', email='${req.body.email}', name='${req.body.name}', description='${req.body.description}', photo=${photoHex} WHERE id=${req.params.id}`;
-
-    console.log(query.slice(query.length-200, query.length ))
+    SET name='${req.body.name}', description='${req.body.description}', photo=${photoHex} WHERE id=${req.params.id}`;
 
     connection.query(query, function (err, result) {
       if (err) throw err;

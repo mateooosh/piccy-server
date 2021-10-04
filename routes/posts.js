@@ -122,12 +122,26 @@ module.exports = (app, connection) => {
     })
   })
 
-  // get post photo by id
+  //connection.query(query,
+  //       async function (err, rows, fields) {
+  //         if (err) throw err;
+  //
+  //         if (rows[0].userPhoto) {
+  //           const image = await fun.resizeImage(rows[0].userPhoto, 40, 40);
+  //           rows[0].userPhoto = fun.bufferToBase64(image);
+  //         }
+  //
+  //         res.json(rows);
+  //       })
+
+  // get photo by id post
   router.get('/posts/:id/photo', auth, (req, res) => {
     const query = `SELECT photo FROM posts WHERE id=${req.params.id}`
-    connection.query(query, function (err, rows, fields) {
+    connection.query(query, async function (err, rows, fields) {
       if (err) throw err;
       rows[0].photo = fun.bufferToBase64(rows[0].photo);
+
+      // rows[0].photo = fun.bufferToBase64(rows[0].photo);
       res.json(rows[0])
     })
   })
