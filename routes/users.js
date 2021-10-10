@@ -138,12 +138,12 @@ module.exports = (app, connection) => {
 
     connection.query(query, function (err, result) {
       if (err) throw err;
-      res.json({message: 'Changed have been saved!'});
+      res.json({message: 'Changes have been saved!'});
     })
   })
 
   // remove user's account
-  router.delete('/users/:id', (req, res) => {
+  router.delete('/users/:id', auth, (req, res) => {
     const id = req.params.id;
     //delete from users
     let query = `DELETE FROM users WHERE id=${id}`;

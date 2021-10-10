@@ -3,6 +3,8 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const websocket = require("socket.io");
 
+const auth = require('./middleware/token');
+
 const app = express();
 const port = 3000;
 
@@ -35,14 +37,14 @@ io.on("connection", function (socket) {
   console.log("Made socket connection");
 
   // get all user's followers
-  app.get('/followers/:id', (req, res) => {
+  app.get('/followers/:id', auth, (req, res) => {
     const query = `SELECT f.id, f.idUser, u.username, u.name, u.photo as userPhoto, (SELECT COUNT(*) FROM followers WHERE idFollower=u.id) as followers FROM followers f JOIN users u ON f.idUser=u.id WHERE f.idFollower=${req.params.id} ORDER BY followers DESC`;
     connection.query(query, async function (err, rows, fields) {
       if (err) throw err;
 
       for (let item of rows) {
         if (item.userPhoto) {
-          const image = await fun.resizeImage(item.userPhoto, 40, 40);
+          const image = await fun.resizeImage(item.userPhoto, 50, 50);
           item.userPhoto = fun.bufferToBase64(image);
         }
       }
@@ -51,15 +53,31 @@ io.on("connection", function (socket) {
     })
   })
 
+  // get all users which like post
+  app.get('/likes/:idPost', auth, (req, res) => {
+    const query = `SELECT l.id, users.id as idUser, users.username, users.name, users.photo as userPhoto FROM users JOIN likes l ON users.id=l.idUser WHERE idPost=${req.params.idPost}`;
+    connection.query(query, async function (err, rows, fields) {
+      if (err) throw err;
+
+      for (let item of rows) {
+        if (item.userPhoto) {
+          const image = await fun.resizeImage(item.userPhoto, 50, 50);
+          item.userPhoto = fun.bufferToBase64(image);
+        }
+      }
+      res.json(rows);
+    })
+  })
+
   // get all user's following
-  app.get('/following/:id', (req, res) => {
+  app.get('/following/:id', auth, (req, res) => {
     const query = `SELECT f.id, f.idUser, u.username, u.name, u.photo as userPhoto, (SELECT COUNT(*) FROM followers WHERE idFollower=u.id) as followers FROM followers f JOIN users u ON f.idFollower=u.id WHERE f.idUser=${req.params.id} ORDER BY followers DESC`;
     connection.query(query, async function (err, rows, fields) {
       if (err) throw err;
 
       for (let item of rows) {
         if (item.userPhoto) {
-          const image = await fun.resizeImage(item.userPhoto, 40, 40);
+          const image = await fun.resizeImage(item.userPhoto, 50, 50);
           item.userPhoto = fun.bufferToBase64(image);
         }
       }
@@ -69,12 +87,19 @@ io.on("connection", function (socket) {
   })
 
   //get channels by idUser
-  app.get('/channels', (req, res) => {
+  app.get('/channels', auth, (req, res) => {
     // console.log(req.query);
     if (req.query.idUser) {
-      const query = `SELECT idUser, idChannel, username, name, photo, (SELECT message from messages m WHERE m.idChannel=uc.idChannel ORDER BY createdAt DESC LIMIT 1) as lastMessage, 
-                    (SELECT createdAt from messages m WHERE m.idChannel=uc.idChannel ORDER BY createdAt DESC LIMIT 1) as createdAt FROM users JOIN users_channels uc ON users.id=uc.idUser 
-                    WHERE uc.idChannel IN (SELECT idChannel FROM users_channels WHERE idUser=${req.query.idUser}) AND uc.idUser!=${req.query.idUser} AND (SELECT message from messages m WHERE m.idChannel=uc.idChannel ORDER BY createdAt DESC LIMIT 1)!='' ORDER BY createdAt DESC`;
+      const query = `SELECT idUser, uc.idChannel, username, name, photo, (SELECT message from messages m WHERE m.idChannel=uc.idChannel ORDER BY m.id DESC LIMIT 1) as lastMessage, 
+                    (SELECT createdAt from messages m WHERE m.idChannel=uc.idChannel ORDER BY createdAt DESC LIMIT 1) as createdAt, 
+                    (SELECT status from users_channels WHERE idChannel=uc.idChannel AND idUser=${req.query.idUser}) as status 
+                    FROM users 
+                    JOIN users_channels uc ON users.id=uc.idUser 
+                    WHERE uc.idChannel IN (SELECT idChannel FROM users_channels WHERE idUser=${req.query.idUser}) 
+                    AND uc.idUser!=${req.query.idUser} 
+                    AND (SELECT message from messages m WHERE m.idChannel=uc.idChannel ORDER BY createdAt DESC LIMIT 1)!='' 
+                    ORDER BY createdAt DESC`
+
       connection.query(query, async (err, rows) => {
         if (err) throw err;
         for (let item of rows) {
@@ -93,7 +118,7 @@ io.on("connection", function (socket) {
   })
 
   //get messages by idUser
-  app.get('/messages/:idUser', (req, res) => {
+  app.get('/messages/:idUser', auth, (req, res) => {
 
     let idChannel = null;
     new Promise((resolve, reject) => {
@@ -161,7 +186,7 @@ io.on("connection", function (socket) {
   // - oldPassword
   // - newPassword
   // reset password
-  app.put('/reset/password', (req, res) => {
+  app.put('/reset/password', auth, (req, res) => {
 
     connection.query(`SELECT password FROM users WHERE id=39`,
       (err, rows, fields) => {
@@ -185,7 +210,7 @@ io.on("connection", function (socket) {
   })
 
   // get tags by query
-  app.get('/tags', (req, res) => {
+  app.get('/tags', auth, (req, res) => {
     if (req.query.query) {
       const query = `SELECT tag FROM tags WHERE tag LIKE '%${req.query.query}%'`;
       connection.query(query, function (err, rows) {
@@ -202,9 +227,9 @@ io.on("connection", function (socket) {
   })
 
   // get posts by tags
-  app.get('/tag/posts', (req, res) => {
+  app.get('/tag/posts', auth, (req, res) => {
     const tag = req.query.tag
-    const query = `SELECT photo, description FROM posts WHERE description LIKE '%${tag}%'`
+    const query = `SELECT photo, description, id FROM posts WHERE description LIKE '%${tag}%'`
     connection.query(query, (err, rows) => {
       if(err) throw err;
       for (let item of rows) {
@@ -220,8 +245,10 @@ io.on("connection", function (socket) {
   // - idReporter
   // - description
   // report bug
-  app.post('/report/bug', (req, res) => {
-    const query = `INSERT INTO bugs VALUES(NULL, '${req.body.idReporter}', NULL, '${req.body.description}', 'opened')`;
+  app.post('/report/bug', auth, (req, res) => {
+    const attachmentHex = req.body.attachment ? fun.base64ToHex(req.body.attachment) : 'NULL';
+
+    const query = `INSERT INTO bugs VALUES(NULL, '${req.body.idReporter}', NULL, '${req.body.description}', 'opened', ${attachmentHex})`;
     connection.query(query, function (err, result) {
       if (err) throw err;
       res.json({message: "Thank You! Bug has been reported"});
@@ -230,10 +257,24 @@ io.on("connection", function (socket) {
 
   socket.on('message-from-user', (message) => {
     console.log(message);
-    const query = `INSERT INTO messages VALUES(NULL, ${message.idSender}, ${message.idReciever}, ${message.idChannel}, '${message.message}', '${message.createdAt}')`;
+    const query = `INSERT INTO messages VALUES(NULL, ${message.idSender}, ${message.idReciever}, ${message.idChannel}, '${message.message}', null)`;
     connection.query(query, function (err, result) {
       if (err) throw err;
-      io.emit(`message-to-user-${message.idReciever}`, message);
+
+      // mark message as unread
+      const updateQuery = `UPDATE users_channels SET status=1 WHERE idChannel=${message.idChannel} AND idUser=${message.idReciever}`;
+      connection.query(updateQuery, (err, result) => {
+        if(err) throw err;
+        io.emit(`message-to-user-${message.idReciever}`, message);
+      })
+    })
+  })
+
+  socket.on('mark-as-read', (idUser, idChannel) => {
+    // mark message as read
+    const updateQuery = `UPDATE users_channels SET status=0 WHERE idChannel=${idChannel} AND idUser=${idUser}`;
+    connection.query(updateQuery, (err, result) => {
+      if(err) throw err;
     })
   })
 

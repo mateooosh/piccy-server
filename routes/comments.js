@@ -9,7 +9,7 @@ module.exports = (app, connection) => {
   
 
   //get post by id
-  router.get('/comments/:idPost', (req, res) => {
+  router.get('/comments/:idPost', auth,(req, res) => {
     let query = `SELECT c.*, u.username, u.photo FROM comments c JOIN users u ON c.idUser=u.id WHERE c.idPost=${req.params.idPost} ORDER BY id DESC`;
      
     connection.query(query, 
@@ -28,7 +28,7 @@ module.exports = (app, connection) => {
   // - idUser
   // - content
   //add comment
-  router.post('/comments/:idPost', (req, res) => {
+  router.post('/comments/:idPost', auth, (req, res) => {
     const query = `INSERT INTO comments VALUES (NULL, ${req.params.idPost}, ${req.body.idUser}, NULL, '${req.body.content}')`;
     
     connection.query(query,
