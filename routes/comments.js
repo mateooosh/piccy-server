@@ -8,9 +8,10 @@ module.exports = (app, connection) => {
   const router = require('express').Router();
   
 
-  //get post by id
+  //get comments by idPost
   router.get('/comments/:idPost', auth,(req, res) => {
-    let query = `SELECT c.*, u.username, u.photo FROM comments c JOIN users u ON c.idUser=u.id WHERE c.idPost=${req.params.idPost} ORDER BY id DESC`;
+    const {idPost} = req.params;
+    let query = `SELECT c.*, u.username, u.photo FROM comments c JOIN users u ON c.idUser=u.id WHERE c.idPost=${idPost} ORDER BY id DESC`;
      
     connection.query(query, 
       function (err, rows, fields) {
@@ -27,9 +28,11 @@ module.exports = (app, connection) => {
   //  BODY
   // - idUser
   // - content
-  //add comment
+  // create comment
   router.post('/comments/:idPost', auth, (req, res) => {
-    const query = `INSERT INTO comments VALUES (NULL, ${req.params.idPost}, ${req.body.idUser}, NULL, '${req.body.content}')`;
+    const {idUser, content} = req.body;
+    const {idPost} = req.params;
+    const query = `INSERT INTO comments VALUES (NULL, ${idPost}, ${idUser}, NULL, '${content}')`;
     
     connection.query(query,
       (err, rows, fields) => {
@@ -39,8 +42,6 @@ module.exports = (app, connection) => {
       }  
     )
   })
-
-  
 
   app.use('/', router);
 }

@@ -81,22 +81,31 @@ module.exports = (app, connection) => {
     let tags = description.split(' ').filter(item => item.startsWith('#'))
     console.log(tags)
 
-    tags = tags.map(tag => `(NULL, '${tag}')`);
+    if(tags.length > 0) {
+      tags = tags.map(tag => `(NULL, '${tag}')`);
+      const values = tags.join(',');
+      const query = `INSERT IGNORE INTO tags VALUES ${values}`;
 
-    const values = tags.join(',');
+      connection.query(query, (err, result) => {
+        if(err) throw err;
 
-    const query = `INSERT IGNORE INTO tags VALUES ${values}`;
+        const query = `INSERT INTO posts (id, idUser, description, uploadDate, photo) VALUES (NULL, ${idUser}, '${description}', current_timestamp(), ${photoHex});`;
+        connection.query(query, function (err, result) {
+          if (err) throw err;
 
-    connection.query(query, (err, result) => {
-      if(err) throw err;
-
+          res.json({message: 'Post has been created'});
+        })
+      })
+    } else {
       const query = `INSERT INTO posts (id, idUser, description, uploadDate, photo) VALUES (NULL, ${idUser}, '${description}', current_timestamp(), ${photoHex});`;
       connection.query(query, function (err, result) {
         if (err) throw err;
 
-        res.json({message: 'Post was created'});
+        res.json({message: 'Post has been created'});
       })
-    })
+    }
+
+
   })
 
   //delete post by id
@@ -134,19 +143,6 @@ module.exports = (app, connection) => {
     })
   })
 
-  // report post
-  router.post('/reports', auth, (req, res) => {
-    const {idPost, idReporter, reason} = req.body;
-
-    const query = `INSERT INTO reports VALUES(NULL, ${idPost}, ${idReporter}, NULL, '${reason}', 'active')`;
-    connection.query(query, function (err, result) {
-      if (err) throw  err;
-      res.json({message: 'Post has been reported!'})
-    })
-  })
-
-
-
   //like post
   router.post('/likes', auth, (req, res) => {
     const {idUser, idPost} = req.body;
@@ -166,6 +162,22 @@ module.exports = (app, connection) => {
     connection.query(query, function (err, result) {
       if (err) throw err;
       res.json({message: 'Post has been disliked'});
+    })
+  })
+
+  // get all users which like post
+  router.get('/likes/:idPost', auth, (req, res) => {
+    const query = `SELECT l.id, users.id as idUser, users.username, users.name, users.photo as userPhoto FROM users JOIN likes l ON users.id=l.idUser WHERE idPost=${req.params.idPost}`;
+    connection.query(query, async function (err, rows, fields) {
+      if (err) throw err;
+
+      for (let item of rows) {
+        if (item.userPhoto) {
+          const image = await fun.resizeImage(item.userPhoto, 50, 50);
+          item.userPhoto = fun.bufferToBase64(image);
+        }
+      }
+      res.json(rows);
     })
   })
 

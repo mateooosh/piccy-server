@@ -1,4 +1,3 @@
-const bcrypt = require('bcrypt');
 module.exports = (app, connection) => {
 
   //import my functions
@@ -139,6 +138,40 @@ module.exports = (app, connection) => {
     connection.query(query, function (err, result) {
       if (err) throw err;
       res.json({message: 'Changes have been saved!'});
+    })
+  })
+
+  // get all user's followers
+  router.get('/followers/:id', auth, (req, res) => {
+    const query = `SELECT f.id, f.idUser, u.username, u.name, u.photo as userPhoto, (SELECT COUNT(*) FROM followers WHERE idFollower=u.id) as followers FROM followers f JOIN users u ON f.idUser=u.id WHERE f.idFollower=${req.params.id} ORDER BY followers DESC`;
+    connection.query(query, async function (err, rows, fields) {
+      if (err) throw err;
+
+      for (let item of rows) {
+        if (item.userPhoto) {
+          const image = await fun.resizeImage(item.userPhoto, 50, 50);
+          item.userPhoto = fun.bufferToBase64(image);
+        }
+      }
+
+      res.json(rows);
+    })
+  })
+
+  // get all user's following
+  router.get('/following/:id', auth, (req, res) => {
+    const query = `SELECT f.id, f.idUser, u.username, u.name, u.photo as userPhoto, (SELECT COUNT(*) FROM followers WHERE idFollower=u.id) as followers FROM followers f JOIN users u ON f.idFollower=u.id WHERE f.idUser=${req.params.id} ORDER BY followers DESC`;
+    connection.query(query, async function (err, rows, fields) {
+      if (err) throw err;
+
+      for (let item of rows) {
+        if (item.userPhoto) {
+          const image = await fun.resizeImage(item.userPhoto, 50, 50);
+          item.userPhoto = fun.bufferToBase64(image);
+        }
+      }
+
+      res.json(rows);
     })
   })
 

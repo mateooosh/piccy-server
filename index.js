@@ -8,8 +8,8 @@ const auth = require('./middleware/token');
 const app = express();
 const port = 3000;
 
-app.use(bodyParser.json({limit: '10mb', extended: true}));
-app.use(bodyParser.urlencoded({limit: '10mb', extended: true}));
+app.use(bodyParser.json({limit: '20mb', extended: true}));
+app.use(bodyParser.urlencoded({limit: '20mb', extended: true}));
 app.use(cors())
 
 const connection = require('./connection/connection').connection;
@@ -28,158 +28,16 @@ const activeUsers = new Set();
 
 //rest routes
 require('./routes/auth')(app, connection);
-require('./routes/test')(app, connection);
 require('./routes/users')(app, connection);
 require('./routes/posts')(app, connection);
 require('./routes/comments')(app, connection);
+require('./routes/reports')(app, connection);
+require('./routes/messages')(app, connection);
+require('./routes/tags')(app, connection);
 
 io.on("connection", function (socket) {
   console.log("Made socket connection");
 
-  // get all user's followers
-  app.get('/followers/:id', auth, (req, res) => {
-    const query = `SELECT f.id, f.idUser, u.username, u.name, u.photo as userPhoto, (SELECT COUNT(*) FROM followers WHERE idFollower=u.id) as followers FROM followers f JOIN users u ON f.idUser=u.id WHERE f.idFollower=${req.params.id} ORDER BY followers DESC`;
-    connection.query(query, async function (err, rows, fields) {
-      if (err) throw err;
-
-      for (let item of rows) {
-        if (item.userPhoto) {
-          const image = await fun.resizeImage(item.userPhoto, 50, 50);
-          item.userPhoto = fun.bufferToBase64(image);
-        }
-      }
-
-      res.json(rows);
-    })
-  })
-
-  // get all users which like post
-  app.get('/likes/:idPost', auth, (req, res) => {
-    const query = `SELECT l.id, users.id as idUser, users.username, users.name, users.photo as userPhoto FROM users JOIN likes l ON users.id=l.idUser WHERE idPost=${req.params.idPost}`;
-    connection.query(query, async function (err, rows, fields) {
-      if (err) throw err;
-
-      for (let item of rows) {
-        if (item.userPhoto) {
-          const image = await fun.resizeImage(item.userPhoto, 50, 50);
-          item.userPhoto = fun.bufferToBase64(image);
-        }
-      }
-      res.json(rows);
-    })
-  })
-
-  // get all user's following
-  app.get('/following/:id', auth, (req, res) => {
-    const query = `SELECT f.id, f.idUser, u.username, u.name, u.photo as userPhoto, (SELECT COUNT(*) FROM followers WHERE idFollower=u.id) as followers FROM followers f JOIN users u ON f.idFollower=u.id WHERE f.idUser=${req.params.id} ORDER BY followers DESC`;
-    connection.query(query, async function (err, rows, fields) {
-      if (err) throw err;
-
-      for (let item of rows) {
-        if (item.userPhoto) {
-          const image = await fun.resizeImage(item.userPhoto, 50, 50);
-          item.userPhoto = fun.bufferToBase64(image);
-        }
-      }
-
-      res.json(rows);
-    })
-  })
-
-  //get channels by idUser
-  app.get('/channels', auth, (req, res) => {
-    // console.log(req.query);
-    if (req.query.idUser) {
-      const query = `SELECT idUser, uc.idChannel, username, name, photo, (SELECT message from messages m WHERE m.idChannel=uc.idChannel ORDER BY m.id DESC LIMIT 1) as lastMessage, 
-                    (SELECT createdAt from messages m WHERE m.idChannel=uc.idChannel ORDER BY createdAt DESC LIMIT 1) as createdAt, 
-                    (SELECT status from users_channels WHERE idChannel=uc.idChannel AND idUser=${req.query.idUser}) as status 
-                    FROM users 
-                    JOIN users_channels uc ON users.id=uc.idUser 
-                    WHERE uc.idChannel IN (SELECT idChannel FROM users_channels WHERE idUser=${req.query.idUser}) 
-                    AND uc.idUser!=${req.query.idUser} 
-                    AND (SELECT message from messages m WHERE m.idChannel=uc.idChannel ORDER BY createdAt DESC LIMIT 1)!='' 
-                    ORDER BY createdAt DESC`
-
-      connection.query(query, async (err, rows) => {
-        if (err) throw err;
-        for (let item of rows) {
-          if (item.photo) {
-            const image = await fun.resizeImage(item.photo, 60, 60);
-            item.photo = fun.bufferToBase64(image);
-          }
-          item.isActive = activeUsers.has(item.username);
-        }
-
-        res.json(rows);
-      })
-    } else {
-      res.json({message: 'You need to add query to your request url'});
-    }
-  })
-
-  //get messages by idUser
-  app.get('/messages/:idUser', auth, (req, res) => {
-
-    let idChannel = null;
-    new Promise((resolve, reject) => {
-      const idChannelQuery = `SELECT idChannel FROM users_channels WHERE idChannel IN (SELECT idChannel FROM users_channels WHERE idUser=${req.params.idUser}) AND idChannel IN (SELECT idChannel FROM users_channels WHERE idUser=${req.query.myIdUser})`
-      connection.query(idChannelQuery, (err, rows) => {
-        if (err) throw(err);
-
-        if (rows.length > 0)
-          idChannel = rows[0].idChannel;
-        resolve();
-      })
-    })
-      .then(() => {
-        if (!idChannel) {
-          connection.query(`SELECT MAX(idChannel) as max FROM users_channels`, (err, rows) => {
-            if (err) throw err;
-            idChannel = rows[0].max + 1;
-
-            connection.query(`INSERT INTO users_channels(idUser, idChannel) VALUES(${req.params.idUser}, ${idChannel}), (${req.query.myIdUser}, ${idChannel});`)
-
-            const queryCreateChannel = `INSERT INTO channels VALUES(${idChannel})`
-            connection.query(queryCreateChannel, (err, rows) => {
-              if (err) throw err;
-              getMessages(idChannel);
-            })
-          })
-        } else {
-          getMessages(idChannel);
-        }
-      })
-
-    function getMessages(idChannel) {
-      const messagesQuery = `SELECT id, idSender, message, createdAt FROM messages WHERE idChannel=${idChannel}`;
-
-      const result = {};
-      new Promise((resolve, reject) => {
-        connection.query(messagesQuery, (err, rows) => {
-          if (err) throw err;
-          result.messages = rows;
-          resolve();
-        })
-      })
-        .then(() => {
-          const usersQuery = `SELECT id as idUser, username, photo, name FROM USERS WHERE id IN (SELECT idUser FROM users_channels WHERE idChannel=${idChannel})`;
-          connection.query(usersQuery, async (err, rows) => {
-            if (err) throw err;
-
-            for (let item of rows) {
-              if (item.photo) {
-                const image = await fun.resizeImage(item.photo, 60, 60);
-                item.photo = fun.bufferToBase64(image);
-              }
-              // item.isActive = activeUsers.has(item.username);
-            }
-
-            result.users = rows;
-            res.json({...result, idChannel})
-          })
-        })
-    }
-  })
 
   //  BODY
   // - idUser
@@ -207,52 +65,6 @@ io.on("connection", function (socket) {
         }
       }
     )
-  })
-
-  // get tags by query
-  app.get('/tags', auth, (req, res) => {
-    if (req.query.query) {
-      const query = `SELECT tag FROM tags WHERE tag LIKE '%${req.query.query}%'`;
-      connection.query(query, function (err, rows) {
-        if (err) throw err;
-        res.json(rows.map(item => item.tag));
-      })
-    } else {
-      const query = `SELECT * FROM tags`;
-      connection.query(query, function (err, rows) {
-        if (err) throw err;
-        res.json(rows.map(item => item.tag));
-      })
-    }
-  })
-
-  // get posts by tags
-  app.get('/tag/posts', auth, (req, res) => {
-    const tag = req.query.tag
-    const query = `SELECT photo, description, id FROM posts WHERE description LIKE '%${tag}%'`
-    connection.query(query, (err, rows) => {
-      if(err) throw err;
-      for (let item of rows) {
-        if (item.photo) {
-          item.photo = fun.bufferToBase64(item.photo);
-        }
-      }
-      res.json(rows);
-    })
-  })
-
-  //  BODY
-  // - idReporter
-  // - description
-  // report bug
-  app.post('/report/bug', auth, (req, res) => {
-    const attachmentHex = req.body.attachment ? fun.base64ToHex(req.body.attachment) : 'NULL';
-
-    const query = `INSERT INTO bugs VALUES(NULL, '${req.body.idReporter}', NULL, '${req.body.description}', 'opened', ${attachmentHex})`;
-    connection.query(query, function (err, result) {
-      if (err) throw err;
-      res.json({message: "Thank You! Bug has been reported"});
-    })
   })
 
   socket.on('message-from-user', (message) => {
