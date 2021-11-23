@@ -129,12 +129,13 @@ module.exports = (app, connection) => {
 
   // update user's info
   router.put('/users/:id', auth, (req, res) => {
-    const photoHex = fun.base64ToHex(req.body.photo);
+    const photoHex = req.body.photo && fun.base64ToHex(req.body.photo);
 
     const query = `
     UPDATE users 
     SET name='${req.body.name}', description='${req.body.description}', photo=${photoHex} WHERE id=${req.params.id}`;
 
+    console.log(query.slice(0, 100))
     connection.query(query, function (err, result) {
       if (err) throw err;
       res.json({message: 'Changes have been saved!'});

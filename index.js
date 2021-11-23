@@ -8,11 +8,14 @@ const auth = require('./middleware/token');
 const app = express();
 const port = 3000;
 
+
+
 app.use(bodyParser.json({limit: '20mb', extended: true}));
 app.use(bodyParser.urlencoded({limit: '20mb', extended: true}));
 app.use(cors())
 
 const connection = require('./connection/connection').connection;
+
 
 // //import my functions
 const fun = require('./functions/functions');
@@ -34,6 +37,7 @@ require('./routes/comments')(app, connection);
 require('./routes/reports')(app, connection);
 require('./routes/messages')(app, connection);
 require('./routes/tags')(app, connection);
+require('./routes/admin')(app, connection);
 
 io.on("connection", function (socket) {
   console.log("Made socket connection");
@@ -45,8 +49,8 @@ io.on("connection", function (socket) {
   // - newPassword
   // reset password
   app.put('/reset/password', auth, (req, res) => {
-
-    connection.query(`SELECT password FROM users WHERE id=39`,
+    console.log('reset');
+    connection.query(`SELECT password FROM users WHERE id=${req.body.idUser}`,
       (err, rows, fields) => {
         if (err) throw err;
         let correctOldPassword = bcrypt.compareSync(req.body.oldPassword, rows[0].password);
@@ -76,7 +80,7 @@ io.on("connection", function (socket) {
       // mark message as unread
       const updateQuery = `UPDATE users_channels SET status=1 WHERE idChannel=${message.idChannel} AND idUser=${message.idReciever}`;
       connection.query(updateQuery, (err, result) => {
-        if(err) throw err;
+        if (err) throw err;
         io.emit(`message-to-user-${message.idReciever}`, message);
       })
     })
@@ -86,14 +90,21 @@ io.on("connection", function (socket) {
     // mark message as read
     const updateQuery = `UPDATE users_channels SET status=0 WHERE idChannel=${idChannel} AND idUser=${idUser}`;
     connection.query(updateQuery, (err, result) => {
-      if(err) throw err;
+      if (err) throw err;
     })
   })
 
   socket.on("new-user", function (data) {
+    console.log('new user')
     socket.username = data;
     activeUsers.add(data);
 
+    console.log(activeUsers)
+  })
+
+  socket.on("log-out", function (data) {
+    console.log('disconnect', data)
+    activeUsers.delete(data)
     console.log(activeUsers)
   })
 

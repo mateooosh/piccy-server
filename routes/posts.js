@@ -9,7 +9,6 @@ module.exports = (app, connection) => {
 
   //get post by id
   router.get('/posts/:id', auth, (req, res) => {
-    console.log('get posts')
     let query = `
       SELECT 
       p.id, u.username, p.description, p.uploadDate, u.photo as userPhoto, 

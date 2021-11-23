@@ -82,7 +82,7 @@ module.exports = (app, connection) => {
                     JOIN users_channels uc ON users.id=uc.idUser 
                     WHERE uc.idChannel IN (SELECT idChannel FROM users_channels WHERE idUser=${req.query.idUser}) 
                     AND uc.idUser!=${req.query.idUser} 
-                    AND (SELECT message from messages m WHERE m.idChannel=uc.idChannel ORDER BY createdAt DESC LIMIT 1)!='' 
+                    
                     ORDER BY createdAt DESC`
 
       connection.query(query, async (err, rows) => {

@@ -11,15 +11,11 @@ module.exports = (app, connection) => {
   //get comments by idPost
   router.get('/comments/:idPost', auth,(req, res) => {
     const {idPost} = req.params;
-    let query = `SELECT c.*, u.username, u.photo FROM comments c JOIN users u ON c.idUser=u.id WHERE c.idPost=${idPost} ORDER BY id DESC`;
+    let query = `SELECT c.*, u.username FROM comments c JOIN users u ON c.idUser=u.id WHERE c.idPost=${idPost} ORDER BY id DESC`;
      
     connection.query(query, 
       function (err, rows, fields) {
         if(err) throw err;
-
-        rows.map(item => {
-          item.photo = fun.bufferToBase64(item.photo);
-        })
 
         res.json(rows);    
       })

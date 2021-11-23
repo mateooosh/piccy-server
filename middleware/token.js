@@ -1,7 +1,5 @@
 const jwt = require("jsonwebtoken");
 
-const config = process.env;
-
 const useToken = false;
 
 const verifyToken = (req, res, next) => {
@@ -16,6 +14,7 @@ const verifyToken = (req, res, next) => {
   }
   try {
     req.user = jwt.verify(token, 'secretKey');
+    console.log('decode', jwt.decode(token))
   } catch (err) {
     return res.status(401).send("Invalid Token");
   }
