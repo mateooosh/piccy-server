@@ -26,6 +26,48 @@ module.exports = (app, connection) => {
       })
   });
 
+  //get all posts
+  router.get('/admin/posts',(req, res) => {
+    let query = `SELECT p.id, u.username, p.description, p.uploadDate, p.photo, count(l.idPost) as likes from users u join posts p on u.id=p.idUser left join likes l on p.id=l.idPost group by p.id`;
+    connection.query(query,
+      async function (err, rows) {
+        if (err) throw err;
+        for (let item of rows) {
+          if (item.photo) {
+            const image = await fun.resizeImage(item.photo, 100, 100);
+            item.photo = fun.bufferToBase64(image);
+          }
+        }
+        res.json(rows);
+      })
+  })
+
+  //delete post by id
+  router.delete('/admin/posts/:id',(req, res) => {
+    const idPost = req.params.id;
+
+    let query = `DELETE FROM posts WHERE id=${idPost};`;
+    connection.query(query, (err, result) => {
+      if (err) throw err;
+
+      query = `DELETE FROM reports WHERE idPost=${idPost};`;
+      connection.query(query, (err, result) => {
+        if (err) throw err;
+
+        query = `DELETE FROM likes WHERE idPost=${idPost};`;
+        connection.query(query, (err, result) => {
+          if (err) throw err;
+
+          query = `DELETE FROM comments WHERE idPost=${idPost}`;
+          connection.query(query, (err, result) => {
+            if (err) throw err;
+            res.json({message: 'Post has been removed'});
+          })
+        })
+      })
+    })
+  })
+
   // remove user's account
   router.delete('/admin/users/:id',(req, res) => {
     const id = req.params.id;

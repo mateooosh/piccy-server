@@ -109,9 +109,7 @@ module.exports = (app, connection) => {
 
   //delete post by id
   router.delete('/posts/:id', auth, (req, res) => {
-    // res.json({message: req.params.id});
     const idPost = req.params.id;
-
 
     let query = `DELETE FROM posts WHERE id=${idPost};`;
     connection.query(query, (err, result) => {
@@ -121,10 +119,15 @@ module.exports = (app, connection) => {
       connection.query(query, (err, result) => {
         if (err) throw err;
 
-        query = `DELETE FROM comments WHERE idPost=${idPost}`;
+        query = `DELETE FROM likes WHERE idPost=${idPost};`;
         connection.query(query, (err, result) => {
           if (err) throw err;
-          res.json({message: 'Post has been removed'});
+
+          query = `DELETE FROM comments WHERE idPost=${idPost}`;
+          connection.query(query, (err, result) => {
+            if (err) throw err;
+            res.json({message: 'Post has been removed'});
+          })
         })
       })
     })
