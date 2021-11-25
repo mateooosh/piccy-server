@@ -28,7 +28,7 @@ module.exports = (app, connection) => {
   router.post('/reports', auth, (req, res) => {
     const {idPost, idReporter, reason} = req.body;
 
-    const query = `INSERT INTO reports VALUES(NULL, ${idPost}, ${idReporter}, NULL, '${reason}', 'active')`;
+    const query = `INSERT INTO reports VALUES(NULL, ${idPost}, ${idReporter}, NULL, '${reason}', 'new')`;
     connection.query(query, function (err, result) {
       if (err) throw  err;
       res.json({message: 'Post has been reported!'})

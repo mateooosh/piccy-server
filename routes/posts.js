@@ -25,7 +25,7 @@ module.exports = (app, connection) => {
       async function (err, rows, fields) {
         if (err) throw err;
 
-        if (rows[0].userPhoto) {
+        if (rows[0]?.userPhoto) {
           const image = await fun.resizeImage(rows[0].userPhoto, 40, 40);
           rows[0].userPhoto = fun.bufferToBase64(image);
         }
@@ -42,15 +42,15 @@ module.exports = (app, connection) => {
     let query = '';
     if (username) {
       if (onlyUserPosts == 'true') {
-        query = `SELECT p.id, u.username, p.description, p.uploadDate, p.photo, count(l.idPost) as likes, (SELECT count(*) FROM comments c WHERE c.idPost=p.id) as comments, CASE WHEN (SELECT id FROM users WHERE username='${username}') IN (SELECT idUser from likes WHERE likes.idPost=p.id) THEN 1 ELSE 0 END as liked from users u join posts p on u.id=p.idUser left join likes l on p.id=l.idPost WHERE p.idUser=(SELECT id FROM users WHERE username='${username}') group by p.id ORDER BY p.uploadDate DESC`;
+        query = `SELECT p.id, u.username, p.description, p.uploadDate, p.photo, count(l.idPost) as likes, (SELECT count(*) FROM comments c WHERE c.idPost=p.id) as comments, CASE WHEN (SELECT id FROM users WHERE username='${username}') IN (SELECT idUser from likes WHERE likes.idPost=p.id) THEN 1 ELSE 0 END as liked from users u join posts p on u.id=p.idUser left join likes l on p.id=l.idPost WHERE p.idUser=(SELECT id FROM users WHERE username='${username}') group by p.id ORDER BY p.id DESC`;
       } else {
-        query = `SELECT p.id, u.username, p.description, p.uploadDate, u.photo as userPhoto, count(l.idPost) as likes, (SELECT count(*) FROM comments c WHERE c.idPost=p.id) as comments, CASE WHEN ${idUser} IN (SELECT idUser from likes WHERE likes.idPost=p.id) THEN 1 ELSE 0 END as liked from users u join posts p on u.id=p.idUser left join likes l on p.id=l.idPost group by p.id ORDER BY p.uploadDate DESC LIMIT 5 OFFSET ${offset}`;
+        query = `SELECT p.id, u.username, p.description, p.uploadDate, u.photo as userPhoto, count(l.idPost) as likes, (SELECT count(*) FROM comments c WHERE c.idPost=p.id) as comments, CASE WHEN ${idUser} IN (SELECT idUser from likes WHERE likes.idPost=p.id) THEN 1 ELSE 0 END as liked from users u join posts p on u.id=p.idUser left join likes l on p.id=l.idPost group by p.id ORDER BY p.id DESC LIMIT 5 OFFSET ${offset}`;
       }
     } else {
       if (onlyUserPosts == 'true') {
-        query = `SELECT p.id, u.username, p.description, p.uploadDate, p.photo, count(l.idPost) as likes, (SELECT count(*) FROM comments c WHERE c.idPost=p.id) as comments, CASE WHEN ${idUser} IN (SELECT idUser from likes WHERE likes.idPost=p.id) THEN 1 ELSE 0 END as liked from users u join posts p on u.id=p.idUser left join likes l on p.id=l.idPost WHERE p.idUser=${idUser} group by p.id ORDER BY p.uploadDate DESC`;
+        query = `SELECT p.id, u.username, p.description, p.uploadDate, p.photo, count(l.idPost) as likes, (SELECT count(*) FROM comments c WHERE c.idPost=p.id) as comments, CASE WHEN ${idUser} IN (SELECT idUser from likes WHERE likes.idPost=p.id) THEN 1 ELSE 0 END as liked from users u join posts p on u.id=p.idUser left join likes l on p.id=l.idPost WHERE p.idUser=${idUser} group by p.id ORDER BY p.id DESC`;
       } else {
-        query = `SELECT p.id, u.username, p.description, p.uploadDate, u.photo as userPhoto, count(l.idPost) as likes, (SELECT count(*) FROM comments c WHERE c.idPost=p.id) as comments, CASE WHEN ${idUser} IN (SELECT idUser from likes WHERE likes.idPost=p.id) THEN 1 ELSE 0 END as liked from users u join posts p on u.id=p.idUser left join likes l on p.id=l.idPost WHERE p.idUser IN (SELECT idFollower FROM followers WHERE idUser=${idUser}) group by p.id ORDER BY p.uploadDate DESC LIMIT 5 OFFSET ${offset}`;
+        query = `SELECT p.id, u.username, p.description, p.uploadDate, u.photo as userPhoto, count(l.idPost) as likes, (SELECT count(*) FROM comments c WHERE c.idPost=p.id) as comments, CASE WHEN ${idUser} IN (SELECT idUser from likes WHERE likes.idPost=p.id) THEN 1 ELSE 0 END as liked from users u join posts p on u.id=p.idUser left join likes l on p.id=l.idPost WHERE p.idUser IN (SELECT idFollower FROM followers WHERE idUser=${idUser}) group by p.id ORDER BY p.id DESC LIMIT 5 OFFSET ${offset}`;
       }
     }
 

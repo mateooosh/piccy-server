@@ -10,7 +10,7 @@ module.exports = (app, connection) => {
   //log in
   router.post('/auth', (req, res) => {
     const {username, password} = req.body;
-    const query = `SELECT password, id, username, photo from USERS WHERE username='${username}'`;
+    const query = `SELECT u.password, u.id, u.username, u.photo, ur.role FROM users u JOIN user_roles ur ON u.idRole=ur.id WHERE u.username='${username}'`;
     connection.query(query, function (err, rows, fields) {
       if (err) throw err;
 
@@ -27,13 +27,14 @@ module.exports = (app, connection) => {
             }
 
             //generate token
-            const accessToken = jwt.sign({id: rows[0].id}, 'secretKey', {expiresIn: 86400})
+            const accessToken = jwt.sign({id: rows[0].id, username: rows[0].username, role: rows[0].role}, 'secretKey', {expiresIn: 86400})
             res.json({
               message: 'Logged successfully',
               id: rows[0].id,
               username: rows[0].username,
               token: accessToken,
-              photo: rows[0].photo
+              photo: rows[0].photo,
+              role: rows[0].role
             });
           } //
           else

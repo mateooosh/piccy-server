@@ -41,7 +41,7 @@ module.exports = (app, connection) => {
       })
 
     function getMessages(idChannel) {
-      const messagesQuery = `SELECT id, idSender, message, createdAt FROM messages WHERE idChannel=${idChannel}`;
+      const messagesQuery = `SELECT id, idSender, message, createdAt FROM messages WHERE idChannel=${idChannel} ORDER BY id DESC`;
 
       const result = {};
       new Promise((resolve, reject) => {
@@ -89,8 +89,10 @@ module.exports = (app, connection) => {
         if (err) throw err;
         for (let item of rows) {
           if (item.photo) {
+            let a = new Date()
             const image = await fun.resizeImage(item.photo, 60, 60);
             item.photo = fun.bufferToBase64(image);
+            console.log(new Date() - a)
           }
           // item.isActive = activeUsers.has(item.username);
         }
