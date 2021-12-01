@@ -1,8 +1,8 @@
 const jwt = require("jsonwebtoken");
 
-const useToken = false;
+const useToken = true;
 
-const verifyToken = (req, res, next) => {
+const verifyToken = (req, res, next, neededRole = 'USER') => {
   // skip when flag is false
   if(!useToken)
     return next();
@@ -10,13 +10,21 @@ const verifyToken = (req, res, next) => {
   const token = req.body.token || req.query.token || req.headers["x-access-token"];
 
   if (!token) {
-    return res.status(403).send("A token is required for authentication");
+    return res.sendStatus(403)
   }
   try {
     req.user = jwt.verify(token, 'secretKey');
-    console.log('decode', jwt.decode(token))
+
+    if(jwt.decode(token)?.role !== 'ADMIN' && neededRole === 'ADMIN') {
+      return res.sendStatus(404)
+    }
+
   } catch (err) {
-    return res.status(401).send("Invalid Token");
+    req.io.emit(`invalid-token-${jwt.decode(token)?.id}`, {
+      code: 'INVALID_TOKEN',
+      message: 'Invalid token.'
+    })
+    return res.sendStatus(405)
   }
   return next();
 };

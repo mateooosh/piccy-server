@@ -14,6 +14,7 @@ app.use(bodyParser.json({limit: '20mb', extended: true}));
 app.use(bodyParser.urlencoded({limit: '20mb', extended: true}));
 app.use(cors())
 
+
 const connection = require('./connection/connection').connection;
 
 
@@ -27,10 +28,15 @@ const server = app.listen(port, () => {
 });
 
 const io = websocket(server);
+app.use(function(req, res, next) {
+  req.io = io
+  next()
+})
+
 const activeUsers = new Set();
 
 //rest routes
-require('./routes/auth')(app, connection);
+require('./routes/login')(app, connection);
 require('./routes/users')(app, connection);
 require('./routes/posts')(app, connection);
 require('./routes/comments')(app, connection);
@@ -40,7 +46,7 @@ require('./routes/tags')(app, connection);
 require('./routes/admin')(app, connection);
 
 io.on("connection", function (socket) {
-  console.log("Made socket connection");
+  // console.log("Made socket connection");
 
 
   //  BODY

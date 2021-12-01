@@ -1,4 +1,6 @@
-module.exports = (app, connection) => {
+const fun = require("../functions/functions");
+const auth = require("../middleware/token");
+module.exports = (app, connection, socket) => {
 
   //import my functions
   const fun = require('../functions/functions');
@@ -25,12 +27,17 @@ module.exports = (app, connection) => {
       async function (err, rows, fields) {
         if (err) throw err;
 
-        if (rows[0]?.userPhoto) {
-          const image = await fun.resizeImage(rows[0].userPhoto, 40, 40);
-          rows[0].userPhoto = fun.bufferToBase64(image);
+        if(rows.length === 0) {
+          res.sendStatus(404)
         }
+        else {
+          if (rows[0]?.userPhoto) {
+            const image = await fun.resizeImage(rows[0].userPhoto, 40, 40);
+            rows[0].userPhoto = fun.bufferToBase64(image);
+          }
 
-        res.json(rows);
+          res.json(rows);
+        }
       })
   })
 
@@ -138,6 +145,7 @@ module.exports = (app, connection) => {
     const query = `SELECT photo FROM posts WHERE id=${req.params.id}`
     connection.query(query, async function (err, rows, fields) {
       if (err) throw err;
+
       rows[0].photo = fun.bufferToBase64(rows[0].photo);
 
       // rows[0].photo = fun.bufferToBase64(rows[0].photo);

@@ -1,3 +1,4 @@
+const fun = require("../functions/functions");
 module.exports = (app, connection) => {
 
   //import my functions
@@ -42,12 +43,19 @@ module.exports = (app, connection) => {
 
     connection.query(query, (err, rows, fields) => {
       if (err) throw err;
-      rows.map(item => {
-        if (item.photo) {
-          item.photo = fun.bufferToBase64(item.photo);
-        }
-      })
-      res.json(rows);
+
+      if(rows.length === 0) {
+        res.sendStatus(404)
+      }
+      else {
+        rows.map(item => {
+          if (item.photo) {
+            item.photo = fun.bufferToBase64(item.photo);
+          }
+        })
+
+        res.json(rows);
+      }
     })
   })
 
@@ -77,7 +85,7 @@ module.exports = (app, connection) => {
       .then(() => {
         bcrypt.hash(password, 10, function (err, hash) {
           if (err) throw err;
-          const query = `INSERT INTO users VALUES(NULL, '${username}', '${email}', '${hash}', '${name}', NULL, NULL);`;
+          const query = `INSERT INTO users VALUES(NULL, '${username}', '${email}', '${hash}', '${name}', NULL, NULL, 1);`;
           connection.query(query, function (err, result) {
             if (err) throw err;
             res.json({message: 'Account has been created! Now You can log in', created: true});
