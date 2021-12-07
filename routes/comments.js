@@ -34,7 +34,12 @@ module.exports = (app, connection) => {
       (err, rows, fields) => {
         if(err) throw err;
 
-        res.json({message: "Comment has been created"});
+        res.json({
+          message: {
+            en: 'Comment has been created',
+            pl: 'Komentarz został utworzony'
+          }
+        });
       }  
     )
   })

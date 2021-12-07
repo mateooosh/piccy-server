@@ -29,7 +29,10 @@ module.exports = (app, connection) => {
             //generate token
             const accessToken = jwt.sign({id: rows[0].id, username: rows[0].username, role: rows[0].role}, 'secretKey', {expiresIn: 86400})
             res.json({
-              message: 'Logged successfully',
+              message: {
+                en: 'Logged successfully.',
+                pl: 'Zalogowano pomyślnie.'
+              },
               id: rows[0].id,
               username: rows[0].username,
               token: accessToken,

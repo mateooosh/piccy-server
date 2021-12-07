@@ -67,11 +67,23 @@ io.on("connection", function (socket) {
             const query = `UPDATE users SET password='${hash}' WHERE id=${req.body.idUser}`;
             connection.query(query, function (err, result) {
               if (err) throw err;
-              res.json({message: "Password has been changed"});
+              res.json({
+                message: {
+                  variant: 'success',
+                  en: "Password has been changed.",
+                  pl: "Hasło zostało zmienione."
+                }
+              });
             })
           });
         } else {
-          res.json({message: "Wrong old password"});
+          res.json({
+            message: {
+              variant: 'error',
+              en: "Wrong old password.",
+              pl: "Błędne stare hasło."
+            }
+          });
         }
       }
     )

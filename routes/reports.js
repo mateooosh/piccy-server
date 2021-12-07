@@ -20,7 +20,12 @@ module.exports = (app, connection) => {
     const query = `INSERT INTO bugs VALUES(NULL, '${idReporter}', NULL, '${description}', 'opened', ${attachmentHex})`;
     connection.query(query, function (err, result) {
       if (err) throw err;
-      res.json({message: "Thank You! Bug has been reported"});
+      res.json({
+        message: {
+          en: 'Thank You! Bug has been reported.',
+          pl: 'Dziękujemy! Błąd został zgłoszony.'
+        }
+      });
     })
   })
 
@@ -31,7 +36,12 @@ module.exports = (app, connection) => {
     const query = `INSERT INTO reports VALUES(NULL, ${idPost}, ${idReporter}, NULL, '${reason}', 'new')`;
     connection.query(query, function (err, result) {
       if (err) throw  err;
-      res.json({message: 'Post has been reported!'})
+      res.json({
+        message: {
+          en: 'Thank You! Post has been reported.',
+          pl: 'Dziękujemy! Post został zgłoszony.'
+        }
+      })
     })
   })
 

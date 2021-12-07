@@ -73,7 +73,10 @@ module.exports = (app, connection) => {
             query = `DELETE FROM comments WHERE idPost=${idPost}`;
             connection.query(query, (err, result) => {
               if (err) throw err;
-              res.json({message: 'Post has been removed'});
+              res.json({message: {
+                  en: 'Post has been removed.',
+                  pl: 'Post został usunięty.'
+                }});
             })
           })
         })
@@ -122,7 +125,10 @@ module.exports = (app, connection) => {
                     query = `DELETE FROM users_channels WHERE idUser=${id}`;
                     connection.query(query, (err, result) => {
                       if (err) throw err;
-                      res.json({message: 'Account has been deleted!'})
+                      res.json({message: {
+                          en: 'Account has been deleted.',
+                          pl: 'Konto zostało usunięte.'
+                        }})
                     })
                   })
                 })
@@ -230,7 +236,13 @@ module.exports = (app, connection) => {
       const query = `UPDATE bugs SET status='${status}' WHERE id=${id}`;
       connection.query(query, function (err, result) {
         if (err) throw err;
-        res.json({message: 'Changed status to ' + status});
+        const statusPL = status === 'opened' ? 'otwarte' : 'rozwiązane'
+        res.json({
+          message: {
+            en: 'Marked as' + status,
+            pl: 'Oznaczono jako ' + statusPL
+          }
+        });
       })
     })
 

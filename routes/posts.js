@@ -27,10 +27,9 @@ module.exports = (app, connection, socket) => {
       async function (err, rows, fields) {
         if (err) throw err;
 
-        if(rows.length === 0) {
+        if (rows.length === 0) {
           res.sendStatus(404)
-        }
-        else {
+        } else {
           if (rows[0]?.userPhoto) {
             const image = await fun.resizeImage(rows[0].userPhoto, 40, 40);
             rows[0].userPhoto = fun.bufferToBase64(image);
@@ -87,19 +86,24 @@ module.exports = (app, connection, socket) => {
     let tags = description.split(' ').filter(item => item.startsWith('#'))
     console.log(tags)
 
-    if(tags.length > 0) {
+    if (tags.length > 0) {
       tags = tags.map(tag => `(NULL, '${tag}')`);
       const values = tags.join(',');
       const query = `INSERT IGNORE INTO tags VALUES ${values}`;
 
       connection.query(query, (err, result) => {
-        if(err) throw err;
+        if (err) throw err;
 
         const query = `INSERT INTO posts (id, idUser, description, uploadDate, photo) VALUES (NULL, ${idUser}, '${description}', current_timestamp(), ${photoHex});`;
         connection.query(query, function (err, result) {
           if (err) throw err;
 
-          res.json({message: 'Post has been created'});
+          res.json({
+            message: {
+              en: 'Post has been created.',
+              pl: 'Post został utworzony.'
+            }
+          });
         })
       })
     } else {
@@ -107,7 +111,12 @@ module.exports = (app, connection, socket) => {
       connection.query(query, function (err, result) {
         if (err) throw err;
 
-        res.json({message: 'Post has been created'});
+        res.json({
+          message: {
+            en: 'Post has been created.',
+            pl: 'Post został utworzony.'
+          }
+        });
       })
     }
 
@@ -133,7 +142,12 @@ module.exports = (app, connection, socket) => {
           query = `DELETE FROM comments WHERE idPost=${idPost}`;
           connection.query(query, (err, result) => {
             if (err) throw err;
-            res.json({message: 'Post has been removed'});
+            res.json({
+              message: {
+                en: 'Post has been removed.',
+                pl: 'Post został usunięty.'
+              }
+            });
           })
         })
       })

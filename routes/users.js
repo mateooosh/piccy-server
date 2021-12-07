@@ -44,10 +44,9 @@ module.exports = (app, connection) => {
     connection.query(query, (err, rows, fields) => {
       if (err) throw err;
 
-      if(rows.length === 0) {
+      if (rows.length === 0) {
         res.sendStatus(404)
-      }
-      else {
+      } else {
         rows.map(item => {
           if (item.photo) {
             item.photo = fun.bufferToBase64(item.photo);
@@ -85,14 +84,28 @@ module.exports = (app, connection) => {
       .then(() => {
         bcrypt.hash(password, 10, function (err, hash) {
           if (err) throw err;
-          const query = `INSERT INTO users VALUES(NULL, '${username}', '${email}', '${hash}', '${name}', NULL, NULL, 1);`;
+          const query = `INSERT INTO users VALUES(NULL, '${username}', '${email}', '${hash}', '${name}', NULL, '', 1);`;
           connection.query(query, function (err, result) {
             if (err) throw err;
-            res.json({message: 'Account has been created! Now You can log in', created: true});
+            res.json({
+              message: {
+                en: 'Account has been created! Now You can log in.',
+                pl: 'Konto zostało utworzone! Teraz możesz się zalogować.'
+              },
+              variant: 'success',
+              created: true
+            });
           })
         })
       })
-      .catch(() => res.json({message: 'Cannot create user account! Given username or email already exists in our database. Try again.', created: false}))
+      .catch(() => res.json({
+        message: {
+          en: 'Cannot create user account! Given username or e-mail already exists in our database. Try again.',
+          pl: 'Nie można utworzyć konta! Podana nazwa użytkownika lub e-mail już istnieje w naszej bazie. Spróbuj ponownie.'
+        },
+        variant: 'error',
+        created: false
+      }))
   })
 
   //follow user
@@ -146,7 +159,12 @@ module.exports = (app, connection) => {
     console.log(query.slice(0, 100))
     connection.query(query, function (err, result) {
       if (err) throw err;
-      res.json({message: 'Changes have been saved!'});
+      res.json({
+        message: {
+          en: 'Changes have been saved!',
+          pl: 'Zmiany zostały zapisane!'
+        }
+      });
     })
   })
 
@@ -222,7 +240,12 @@ module.exports = (app, connection) => {
                   query = `DELETE FROM users_channels WHERE idUser=${id}`;
                   connection.query(query, (err, result) => {
                     if (err) throw err;
-                    res.json({message: 'Account has been deleted! You will be logged off'})
+                    res.json({
+                      message: {
+                        en: 'Account has been deleted! You will be logged off.',
+                        pl: 'Konto zostało usunięte! Nastąpi wylogowanie.'
+                      }
+                    })
                   })
                 })
               })
