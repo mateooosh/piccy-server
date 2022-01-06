@@ -1,5 +1,6 @@
 const fun = require("../functions/functions");
 const auth = require("../middleware/token");
+const cluster = require("cluster");
 module.exports = (app, connection, socket) => {
 
   //import my functions
@@ -32,7 +33,7 @@ module.exports = (app, connection, socket) => {
         } else {
           if (rows[0]?.userPhoto) {
             const image = await fun.resizeImage(rows[0].userPhoto, 40, 40);
-            rows[0].userPhoto = fun.bufferToBase64(image);
+            rows[0].userPhoto = fun.bufferToBase64(rows[0].userPhoto);
           }
 
           res.json(rows);
@@ -98,6 +99,7 @@ module.exports = (app, connection, socket) => {
         connection.query(query, function (err, result) {
           if (err) throw err;
 
+          console.log('1')
           res.json({
             message: {
               en: 'Post has been created.',
@@ -111,6 +113,7 @@ module.exports = (app, connection, socket) => {
       connection.query(query, function (err, result) {
         if (err) throw err;
 
+        console.log('2')
         res.json({
           message: {
             en: 'Post has been created.',
@@ -161,8 +164,6 @@ module.exports = (app, connection, socket) => {
       if (err) throw err;
 
       rows[0].photo = fun.bufferToBase64(rows[0].photo);
-
-      // rows[0].photo = fun.bufferToBase64(rows[0].photo);
       res.json(rows[0])
     })
   })
@@ -174,7 +175,7 @@ module.exports = (app, connection, socket) => {
     const query = `INSERT INTO likes VALUES(NULL, '${idUser}', '${idPost}');`;
     connection.query(query, function (err, result) {
       if (err) throw err;
-      res.json({message: 'Liked'});
+      res.json({message: 'Post has been liked'});
     })
   })
 

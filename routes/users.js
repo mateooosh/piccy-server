@@ -1,4 +1,5 @@
 const fun = require("../functions/functions");
+const cluster = require("cluster");
 module.exports = (app, connection) => {
 
   //import my functions
@@ -52,7 +53,6 @@ module.exports = (app, connection) => {
             item.photo = fun.bufferToBase64(item.photo);
           }
         })
-
         res.json(rows);
       }
     })

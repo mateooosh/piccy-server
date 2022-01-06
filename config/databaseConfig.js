@@ -1,8 +1,10 @@
+require('dotenv').config()
+
 const config  = {
-  host: "localhost",
-  user: "root",
-  password: "",
-  database: "praca_inzynierska",
+  host: process.env.DATABASE_HOST,
+  user: process.env.DATABASE_USER,
+  password: process.env.DATABASE_PASSWORD,
+  database: process.env.DATABASE_NAME,
   charset : "utf8mb4"
 }
 

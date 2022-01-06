@@ -1,6 +1,6 @@
 const jwt = require("jsonwebtoken");
 
-const useToken = true;
+const useToken = false;
 
 const verifyToken = (req, res, next, neededRole = 'USER') => {
   // skip when flag is false
@@ -20,10 +20,6 @@ const verifyToken = (req, res, next, neededRole = 'USER') => {
     }
 
   } catch (err) {
-    req.io.emit(`invalid-token-${jwt.decode(token)?.id}`, {
-      code: 'INVALID_TOKEN',
-      message: 'Invalid token.'
-    })
     return res.sendStatus(405)
   }
   return next();
